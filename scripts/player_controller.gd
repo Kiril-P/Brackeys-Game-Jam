@@ -19,10 +19,6 @@ class_name PlayerController
 @export_group("Gravity")
 @export_range(0.05, 1.0, 0.01) var gravity_rotate_duration: float = 0.3
 
-@export_group("World Wrapping")
-@export var world_wrap_enabled: bool = true
-@export var world_wrap_extents: Vector3 = Vector3(12.0, 12.0, 12.0)
-
 @onready var head: Node3D = %Head
 @onready var camera: Camera3D = %Camera3D
 @onready var gravity_raycast: RayCast3D = %GravityRayCast3D
@@ -57,7 +53,6 @@ func _physics_process(delta: float) -> void:
 	_update_up_direction(delta)
 	_apply_movement(delta)
 	move_and_slide()
-	_wrap_world_position()
 
 
 func _handle_gravity_input() -> void:
@@ -196,30 +191,6 @@ func _to_cardinal_axis(direction: Vector3) -> Vector3:
 	if y_abs >= x_abs and y_abs >= z_abs:
 		return Vector3.UP if direction.y >= 0.0 else Vector3.DOWN
 	return Vector3.BACK if direction.z >= 0.0 else Vector3.FORWARD
-
-
-func _wrap_world_position() -> void:
-	if not world_wrap_enabled:
-		return
-
-	var wrapped: Vector3 = global_position
-	if wrapped.x > world_wrap_extents.x:
-		wrapped.x = -world_wrap_extents.x
-	elif wrapped.x < -world_wrap_extents.x:
-		wrapped.x = world_wrap_extents.x
-
-	if wrapped.y > world_wrap_extents.y:
-		wrapped.y = -world_wrap_extents.y
-	elif wrapped.y < -world_wrap_extents.y:
-		wrapped.y = world_wrap_extents.y
-
-	if wrapped.z > world_wrap_extents.z:
-		wrapped.z = -world_wrap_extents.z
-	elif wrapped.z < -world_wrap_extents.z:
-		wrapped.z = world_wrap_extents.z
-
-	if wrapped != global_position:
-		global_position = wrapped
 
 
 func _apply_active_color_for_up(current_up: Vector3) -> void:
