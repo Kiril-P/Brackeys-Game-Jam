@@ -1,10 +1,13 @@
-[gd_scene load_steps=9 format=3 uid="uid://ixpifoc5g4d1"]
+[gd_scene load_steps=18 format=4 uid="uid://ixpifoc5g4d1"]
 
 [ext_resource type="Script" uid="uid://4o88o544qfn2" path="res://sobel_overlay_setup.gd" id="1_nnsk1"]
 [ext_resource type="PackedScene" uid="uid://ty88hv3yet32" path="res://scenes/player.tscn" id="2_8hsyg"]
 [ext_resource type="PackedScene" uid="uid://dsxliso1k363a" path="res://scenes/gravity_playground.tscn" id="3_fpp0q"]
-[ext_resource type="Script" uid="uid://cmkrpywdpt7k4" path="res://scripts/gravity_debug_hud.gd" id="4_4r5o0"]
 [ext_resource type="PackedScene" uid="uid://dnhl7uybr14ae" path="res://scenes/pause_menu.tscn" id="5_21j73"]
+[ext_resource type="PackedScene" uid="uid://dpv4amqqftrd4" path="res://scenes/hud.tscn" id="5_71j4m"]
+[ext_resource type="Script" uid="uid://cw1r4c1d7beyv" path="res://addons/portals/scripts/portal_3d.gd" id="6_4mrxx"]
+[ext_resource type="Material" uid="uid://dcfkcyddxkglf" path="res://addons/portals/materials/editor-preview-portal-material.tres" id="7_7r4gi"]
+[ext_resource type="Script" uid="uid://bxcel82b180o3" path="res://addons/portals/scripts/portal_boxmesh.gd" id="8_w7kh3"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_nnsk1"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -18,6 +21,40 @@ background_mode = 2
 sky = SubResource("Sky_rwgxs")
 tonemap_mode = 2
 glow_enabled = true
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_e3hyu"]
+_surfaces = [{
+"aabb": AABB(-1.25, -1.25, -1, 2.5, 2.5, 1),
+"attribute_data": PackedByteArray("AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AACAPwAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAIA/AACAPw=="),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAQABAABAAUAAQADAAUABQADAAcAAwACAAcABwACAAYAAgAAAAYABgAAAAQABAAFAAYABgAFAAcAAAABAAIAAgABAAMA"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("AACgvwAAoD8AAAAAAACgPwAAoD8AAAAAAACgvwAAoL8AAAAAAACgPwAAoL8AAAAAAACgvwAAoD8AAIC/AACgPwAAoD8AAIC/AACgvwAAoL8AAIC/AACgPwAAoL8AAIC//3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgA==")
+}]
+script = ExtResource("8_w7kh3")
+size = Vector3(2.5, 2.5, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_q5onr"]
+size = Vector3(2.5, 2.5, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4mrxx"]
+albedo_color = Color(2.8878452e-07, 0.22651854, 0.6234155, 1)
+roughness = 0.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7r4gi"]
+albedo_color = Color(0.9411765, 0, 0, 1)
+roughness = 0.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e3hyu"]
+albedo_color = Color(0, 1, 0.14901961, 1)
+roughness = 0.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w7kh3"]
+albedo_color = Color(1, 0.19157687, 0.73794657, 1)
+roughness = 0.0
 
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_nnsk1")
@@ -36,37 +73,454 @@ shadow_enabled = true
 [node name="GravityPlayground" parent="." instance=ExtResource("3_fpp0q")]
 
 [node name="Player" parent="." instance=ExtResource("2_8hsyg")]
-transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 1.2, 0)
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 1.2, 7.855589)
 
-[node name="HUD" type="CanvasLayer" parent="."]
-layer = 10
-script = ExtResource("4_4r5o0")
-
-[node name="CrosshairDot" type="Label" parent="HUD"]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -5.0
-offset_top = -12.0
-offset_right = 5.0
-offset_bottom = 12.0
-theme_override_font_sizes/font_size = 24
-text = "."
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="GravityDebugLabel" type="Label" parent="HUD"]
-unique_name_in_owner = true
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 260.0
-offset_bottom = 72.0
-theme_override_font_sizes/font_size = 16
-text = "Gravity Up: +Y
-Gravity Down: -Y"
+[node name="HUD" parent="." instance=ExtResource("5_71j4m")]
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.3023067, 0)
 omni_range = 42.498
+
+[node name="Level Cube" type="Node3D" parent="."]
+
+[node name="CSGBox3D" type="CSGBox3D" parent="Level Cube"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6355548, 0)
+use_collision = true
+size = Vector3(3, 3, 3)
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="Level Cube/CSGBox3D"]
+operation = 2
+use_collision = true
+size = Vector3(2.5, 2.5, 3)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="Level Cube/CSGBox3D"]
+operation = 2
+use_collision = true
+size = Vector3(3, 2.5, 2.5)
+
+[node name="1" type="Node3D" parent="Level Cube"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3644452, 0)
+
+[node name="Portal3D" type="Node3D" parent="Level Cube/1" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
+process_priority = 100
+process_physics_priority = 100
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 1.4849699)
+script = ExtResource("6_4mrxx")
+_portal_mesh_path = NodePath("Portal3D_Mesh")
+_teleport_area_path = NodePath("TeleportArea")
+_teleport_collider_path = NodePath("TeleportArea/Collider")
+portal_size = Vector2(2.5, 2.5)
+exit_portal = NodePath("../Portal3D2")
+player_camera = NodePath("../../../Player/Head/Camera3D")
+portal_frame_width = 0.0
+viewport_size_mode = 0
+view_direction = 1
+portal_render_layer = 524288
+is_teleport = true
+teleport_direction = 0
+rigidbody_boost = 0.0
+teleport_tolerance = 0.5
+teleport_interactions = 3
+teleport_collision_mask = 32768
+start_deactivated = false
+metadata/_custom_type_script = "uid://cw1r4c1d7beyv"
+metadata/_edit_group_ = true
+
+[node name="Portal3D_Mesh" type="MeshInstance3D" parent="Level Cube/1/Portal3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.05, 0, 0, 0)
+layers = 524288
+material_override = ExtResource("7_7r4gi")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_e3hyu")
+
+[node name="TeleportArea" type="Area3D" parent="Level Cube/1/Portal3D"]
+
+[node name="Collider" type="CollisionShape3D" parent="Level Cube/1/Portal3D/TeleportArea"]
+shape = SubResource("BoxShape3D_q5onr")
+
+[node name="Portal3D2" type="Node3D" parent="Level Cube/1" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
+process_priority = 100
+process_physics_priority = 100
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -22, 4, 1.459435)
+script = ExtResource("6_4mrxx")
+_portal_mesh_path = NodePath("Portal3D_Mesh")
+_teleport_area_path = NodePath("TeleportArea")
+_teleport_collider_path = NodePath("TeleportArea/Collider")
+portal_size = Vector2(2.5, 2.5)
+exit_portal = NodePath("../Portal3D")
+player_camera = NodePath("../../../Player/Head/Camera3D")
+portal_frame_width = 0.0
+viewport_size_mode = 0
+view_direction = 2
+portal_render_layer = 524288
+is_teleport = true
+teleport_direction = 1
+rigidbody_boost = 0.0
+teleport_tolerance = 0.5
+teleport_interactions = 3
+teleport_collision_mask = 32768
+start_deactivated = false
+metadata/_custom_type_script = "uid://cw1r4c1d7beyv"
+metadata/_edit_group_ = true
+
+[node name="Portal3D_Mesh" type="MeshInstance3D" parent="Level Cube/1/Portal3D2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.05, 0, 0, 0)
+layers = 524288
+material_override = ExtResource("7_7r4gi")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_e3hyu")
+
+[node name="TeleportArea" type="Area3D" parent="Level Cube/1/Portal3D2"]
+
+[node name="Collider" type="CollisionShape3D" parent="Level Cube/1/Portal3D2/TeleportArea"]
+shape = SubResource("BoxShape3D_q5onr")
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="Level Cube/1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 4, 0)
+use_collision = true
+size = Vector3(3, 3, 3)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="Level Cube/1/CSGBox3D2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.33258057)
+operation = 2
+size = Vector3(2.5, 2.5, 3.1651611)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="Level Cube/1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 4, 15)
+use_collision = true
+size = Vector3(8, 8, 30)
+
+[node name="CSGBox3D7" type="CSGBox3D" parent="Level Cube/1/CSGBox3D3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+operation = 2
+size = Vector3(7, 7, 30)
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="Level Cube/1/CSGBox3D3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14.667419)
+operation = 2
+size = Vector3(2.5, 2.5, 3.1651611)
+
+[node name="CSGBox3D" type="CSGBox3D" parent="Level Cube/1"]
+transform = Transform3D(0.8850364, 0, -0.46552184, 0.27127495, 0.8126637, 0.51574, 0.37831268, -0.58273304, 0.7192369, -21.868942, 3.476678, -0.9688567)
+material_override = SubResource("StandardMaterial3D_4mrxx")
+
+[node name="2" type="Node3D" parent="Level Cube"]
+
+[node name="Portal3D3" type="Node3D" parent="Level Cube/2" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
+process_priority = 100
+process_physics_priority = 100
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 1.6355548, -1.4995055)
+script = ExtResource("6_4mrxx")
+_portal_mesh_path = NodePath("Portal3D_Mesh")
+_teleport_area_path = NodePath("TeleportArea")
+_teleport_collider_path = NodePath("TeleportArea/Collider")
+portal_size = Vector2(2.5, 2.5)
+exit_portal = NodePath("../Portal3D4")
+player_camera = NodePath("../../../Player/Head/Camera3D")
+portal_frame_width = 0.0
+viewport_size_mode = 0
+view_direction = 1
+portal_render_layer = 524288
+is_teleport = true
+teleport_direction = 0
+rigidbody_boost = 0.0
+teleport_tolerance = 0.5
+teleport_interactions = 3
+teleport_collision_mask = 32768
+start_deactivated = false
+metadata/_custom_type_script = "uid://cw1r4c1d7beyv"
+metadata/_edit_group_ = true
+
+[node name="Portal3D_Mesh" type="MeshInstance3D" parent="Level Cube/2/Portal3D3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.05, 0, 0, 0)
+layers = 524288
+material_override = ExtResource("7_7r4gi")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_e3hyu")
+
+[node name="TeleportArea" type="Area3D" parent="Level Cube/2/Portal3D3"]
+
+[node name="Collider" type="CollisionShape3D" parent="Level Cube/2/Portal3D3/TeleportArea"]
+shape = SubResource("BoxShape3D_q5onr")
+
+[node name="Portal3D4" type="Node3D" parent="Level Cube/2" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
+process_priority = 100
+process_physics_priority = 100
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 1.6355548, -11.991433)
+script = ExtResource("6_4mrxx")
+_portal_mesh_path = NodePath("Portal3D_Mesh")
+_teleport_area_path = NodePath("TeleportArea")
+_teleport_collider_path = NodePath("TeleportArea/Collider")
+portal_size = Vector2(2.5, 2.5)
+exit_portal = NodePath("../Portal3D3")
+player_camera = NodePath("../../../Player/Head/Camera3D")
+portal_frame_width = 0.0
+viewport_size_mode = 0
+view_direction = 2
+portal_render_layer = 524288
+is_teleport = true
+teleport_direction = 1
+rigidbody_boost = 0.0
+teleport_tolerance = 0.5
+teleport_interactions = 3
+teleport_collision_mask = 32768
+start_deactivated = false
+metadata/_custom_type_script = "uid://cw1r4c1d7beyv"
+metadata/_edit_group_ = true
+
+[node name="Portal3D_Mesh" type="MeshInstance3D" parent="Level Cube/2/Portal3D4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.05, 0, 0, 0)
+layers = 524288
+material_override = ExtResource("7_7r4gi")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_e3hyu")
+
+[node name="TeleportArea" type="Area3D" parent="Level Cube/2/Portal3D4"]
+
+[node name="Collider" type="CollisionShape3D" parent="Level Cube/2/Portal3D4/TeleportArea"]
+shape = SubResource("BoxShape3D_q5onr")
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="Level Cube/2"]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -22, 1.6355548, -10.470324)
+use_collision = true
+size = Vector3(3, 3, 3)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="Level Cube/2/CSGBox3D4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.33258057)
+operation = 2
+size = Vector3(2.5, 2.5, 3.1651611)
+
+[node name="CSGBox3D5" type="CSGBox3D" parent="Level Cube/2"]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -22, 1.6355548, -25.769913)
+use_collision = true
+size = Vector3(8, 8, 30)
+
+[node name="CSGBox3D7" type="CSGBox3D" parent="Level Cube/2/CSGBox3D5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+operation = 2
+size = Vector3(7, 7, 30)
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="Level Cube/2/CSGBox3D5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14.667419)
+operation = 2
+size = Vector3(2.5, 2.5, 3.1651611)
+
+[node name="CSGBox3D6" type="CSGBox3D" parent="Level Cube/2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.02052, 0.96822333, -9.712887)
+material_override = SubResource("StandardMaterial3D_7r4gi")
+
+[node name="3" type="Node3D" parent="Level Cube"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.364, 0)
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="Level Cube/3"]
+transform = Transform3D(-0.5476865, 0.7731958, -0.3196994, 0.7443163, 0.2757334, -0.6082469, -0.38214222, -0.5710861, -0.7265176, 33.814766, 3.6963844, -0.9688567)
+material_override = SubResource("StandardMaterial3D_e3hyu")
+
+[node name="Portal3D3" type="Node3D" parent="Level Cube/3" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
+process_priority = 100
+process_physics_priority = 100
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.5, 4, 0)
+script = ExtResource("6_4mrxx")
+_portal_mesh_path = NodePath("Portal3D_Mesh")
+_teleport_area_path = NodePath("TeleportArea")
+_teleport_collider_path = NodePath("TeleportArea/Collider")
+portal_size = Vector2(2.5, 2.5)
+exit_portal = NodePath("../Portal3D5")
+player_camera = NodePath("../../../Player/Head/Camera3D")
+portal_frame_width = 0.0
+viewport_size_mode = 0
+view_direction = 1
+portal_render_layer = 524288
+is_teleport = true
+teleport_direction = 0
+rigidbody_boost = 0.0
+teleport_tolerance = 0.5
+teleport_interactions = 3
+teleport_collision_mask = 32768
+start_deactivated = false
+metadata/_custom_type_script = "uid://cw1r4c1d7beyv"
+metadata/_edit_group_ = true
+
+[node name="Portal3D_Mesh" type="MeshInstance3D" parent="Level Cube/3/Portal3D3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.05, 0, 0, 0)
+layers = 524288
+material_override = ExtResource("7_7r4gi")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_e3hyu")
+
+[node name="TeleportArea" type="Area3D" parent="Level Cube/3/Portal3D3"]
+
+[node name="Collider" type="CollisionShape3D" parent="Level Cube/3/Portal3D3/TeleportArea"]
+shape = SubResource("BoxShape3D_q5onr")
+
+[node name="Portal3D5" type="Node3D" parent="Level Cube/3" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
+process_priority = 100
+process_physics_priority = 100
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 34.175003, 3.9995549, -11.991433)
+script = ExtResource("6_4mrxx")
+_portal_mesh_path = NodePath("Portal3D_Mesh")
+_teleport_area_path = NodePath("TeleportArea")
+_teleport_collider_path = NodePath("TeleportArea/Collider")
+portal_size = Vector2(2.5, 2.5)
+exit_portal = NodePath("../Portal3D3")
+player_camera = NodePath("../../../Player/Head/Camera3D")
+portal_frame_width = 0.0
+viewport_size_mode = 0
+view_direction = 2
+portal_render_layer = 524288
+is_teleport = true
+teleport_direction = 1
+rigidbody_boost = 0.0
+teleport_tolerance = 0.5
+teleport_interactions = 3
+teleport_collision_mask = 32768
+start_deactivated = false
+metadata/_custom_type_script = "uid://cw1r4c1d7beyv"
+metadata/_edit_group_ = true
+
+[node name="Portal3D_Mesh" type="MeshInstance3D" parent="Level Cube/3/Portal3D5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.05, 0, 0, 0)
+layers = 524288
+material_override = ExtResource("7_7r4gi")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_e3hyu")
+
+[node name="TeleportArea" type="Area3D" parent="Level Cube/3/Portal3D5"]
+
+[node name="Collider" type="CollisionShape3D" parent="Level Cube/3/Portal3D5/TeleportArea"]
+shape = SubResource("BoxShape3D_q5onr")
+
+[node name="CSGBox3D6" type="CSGBox3D" parent="Level Cube/3"]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 34.175003, 3.9995549, -10.470324)
+use_collision = true
+size = Vector3(3, 3, 3)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="Level Cube/3/CSGBox3D6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.33258057)
+operation = 2
+size = Vector3(2.5, 2.5, 3.1651611)
+
+[node name="CSGBox3D7" type="CSGBox3D" parent="Level Cube/3"]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 34.175003, 3.9995549, -25.769913)
+use_collision = true
+size = Vector3(8, 8, 30)
+
+[node name="CSGBox3D7" type="CSGBox3D" parent="Level Cube/3/CSGBox3D7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+operation = 2
+size = Vector3(7, 7, 30)
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="Level Cube/3/CSGBox3D7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14.667419)
+operation = 2
+size = Vector3(2.5, 2.5, 3.1651611)
+
+[node name="4" type="Node3D" parent="Level Cube"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.364, 0)
+
+[node name="Portal3D4" type="Node3D" parent="Level Cube/4" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
+process_priority = 100
+process_physics_priority = 100
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -1.4935927, 4, 0)
+script = ExtResource("6_4mrxx")
+_portal_mesh_path = NodePath("Portal3D_Mesh")
+_teleport_area_path = NodePath("TeleportArea")
+_teleport_collider_path = NodePath("TeleportArea/Collider")
+portal_size = Vector2(2.5, 2.5)
+exit_portal = NodePath("../Portal3D3")
+player_camera = NodePath("../../../Player/Head/Camera3D")
+portal_frame_width = 0.0
+viewport_size_mode = 0
+view_direction = 1
+portal_render_layer = 524288
+is_teleport = true
+teleport_direction = 0
+rigidbody_boost = 0.0
+teleport_tolerance = 0.5
+teleport_interactions = 3
+teleport_collision_mask = 32768
+start_deactivated = false
+metadata/_custom_type_script = "uid://cw1r4c1d7beyv"
+metadata/_edit_group_ = true
+
+[node name="Portal3D_Mesh" type="MeshInstance3D" parent="Level Cube/4/Portal3D4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.05, 0, 0, 0)
+layers = 524288
+material_override = ExtResource("7_7r4gi")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_e3hyu")
+
+[node name="TeleportArea" type="Area3D" parent="Level Cube/4/Portal3D4"]
+
+[node name="Collider" type="CollisionShape3D" parent="Level Cube/4/Portal3D4/TeleportArea"]
+shape = SubResource("BoxShape3D_q5onr")
+
+[node name="Portal3D3" type="Node3D" parent="Level Cube/4" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
+process_priority = 100
+process_physics_priority = 100
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 34.175003, 3.9995549, 1.459435)
+script = ExtResource("6_4mrxx")
+_portal_mesh_path = NodePath("Portal3D_Mesh")
+_teleport_area_path = NodePath("TeleportArea")
+_teleport_collider_path = NodePath("TeleportArea/Collider")
+portal_size = Vector2(2.5, 2.5)
+exit_portal = NodePath("../Portal3D4")
+player_camera = NodePath("../../../Player/Head/Camera3D")
+portal_frame_width = 0.0
+viewport_size_mode = 0
+view_direction = 2
+portal_render_layer = 524288
+is_teleport = true
+teleport_direction = 1
+rigidbody_boost = 0.0
+teleport_tolerance = 0.5
+teleport_interactions = 3
+teleport_collision_mask = 32768
+start_deactivated = false
+metadata/_custom_type_script = "uid://cw1r4c1d7beyv"
+metadata/_edit_group_ = true
+
+[node name="Portal3D_Mesh" type="MeshInstance3D" parent="Level Cube/4/Portal3D3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.05, 0, 0, 0)
+layers = 524288
+material_override = ExtResource("7_7r4gi")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_e3hyu")
+
+[node name="TeleportArea" type="Area3D" parent="Level Cube/4/Portal3D3"]
+
+[node name="Collider" type="CollisionShape3D" parent="Level Cube/4/Portal3D3/TeleportArea"]
+shape = SubResource("BoxShape3D_q5onr")
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="Level Cube/4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 34.175003, 3.9995549, 0)
+use_collision = true
+size = Vector3(3, 3, 3)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="Level Cube/4/CSGBox3D4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.33258057)
+operation = 2
+size = Vector3(2.5, 2.5, 3.1651611)
+
+[node name="CSGBox3D5" type="CSGBox3D" parent="Level Cube/4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 34.175003, 3.9995549, 15)
+use_collision = true
+size = Vector3(8, 8, 30)
+
+[node name="CSGBox3D7" type="CSGBox3D" parent="Level Cube/4/CSGBox3D5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+operation = 2
+size = Vector3(7, 7, 30)
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="Level Cube/4/CSGBox3D5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14.667419)
+operation = 2
+size = Vector3(2.5, 2.5, 3.1651611)
+
+[node name="CSGBox3D8" type="CSGBox3D" parent="Level Cube/4"]
+transform = Transform3D(0.7123691, 0.48731202, -0.50503194, -0.701805, 0.4946474, -0.51263404, 0, 0.7196186, 0.69436955, 34.104733, 4.8868456, -9.712887)
+material_override = SubResource("StandardMaterial3D_w7kh3")
+
+[node name="5" type="Node3D" parent="Level Cube"]
+
+[editable path="Player"]
