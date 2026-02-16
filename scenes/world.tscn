@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://ixpifoc5g4d1"]
+[gd_scene load_steps=9 format=3 uid="uid://ixpifoc5g4d1"]
 
 [ext_resource type="Script" uid="uid://4o88o544qfn2" path="res://sobel_overlay_setup.gd" id="1_nnsk1"]
 [ext_resource type="PackedScene" uid="uid://ty88hv3yet32" path="res://scenes/player.tscn" id="2_8hsyg"]
 [ext_resource type="PackedScene" uid="uid://dsxliso1k363a" path="res://scenes/gravity_playground.tscn" id="3_fpp0q"]
-[ext_resource type="Script" path="res://scripts/gravity_debug_hud.gd" id="4_4r5o0"]
+[ext_resource type="Script" uid="uid://cmkrpywdpt7k4" path="res://scripts/gravity_debug_hud.gd" id="4_4r5o0"]
+[ext_resource type="PackedScene" uid="uid://dnhl7uybr14ae" path="res://scenes/pause_menu.tscn" id="5_21j73"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_nnsk1"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -23,11 +24,13 @@ script = ExtResource("1_nnsk1")
 line_color = Color(0, 0, 0, 1)
 line_thickness = 1.5
 
+[node name="PauseMenu" parent="." instance=ExtResource("5_21j73")]
+
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_4wyf3")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 3.7198167, 0)
 shadow_enabled = true
 
 [node name="GravityPlayground" parent="." instance=ExtResource("3_fpp0q")]
@@ -53,7 +56,6 @@ theme_override_font_sizes/font_size = 24
 text = "."
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
 
 [node name="GravityDebugLabel" type="Label" parent="HUD"]
 unique_name_in_owner = true
@@ -62,4 +64,9 @@ offset_top = 16.0
 offset_right = 260.0
 offset_bottom = 72.0
 theme_override_font_sizes/font_size = 16
-text = "Gravity Up: +Y\nGravity Down: -Y"
+text = "Gravity Up: +Y
+Gravity Down: -Y"
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.3023067, 0)
+omni_range = 42.498

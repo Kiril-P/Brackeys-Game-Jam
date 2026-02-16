@@ -1,0 +1,362 @@
+[gd_scene load_steps=9 format=3 uid="uid://dnhl7uybr14ae"]
+
+[ext_resource type="Script" uid="uid://gbluru6d1n7q" path="res://scripts/pause_menu.gd" id="1_pause_script"]
+[ext_resource type="Shader" uid="uid://b2etkdhbn0mny" path="res://transition.gdshader" id="2_transition_shader"]
+[ext_resource type="Shader" path="res://pause_non_euclid.gdshader" id="3_non_euclid_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_transition"]
+shader = ExtResource("2_transition_shader")
+shader_parameter/use_sprite_alpha = true
+shader_parameter/use_transition_texture = false
+shader_parameter/transition_type = 0
+shader_parameter/position = Vector2(0.5, 0.5)
+shader_parameter/invert = false
+shader_parameter/grid_size = Vector2(5, 5)
+shader_parameter/rotation_angle = 0.0
+shader_parameter/global_x_mirror = false
+shader_parameter/global_y_mirror = false
+shader_parameter/local_x_mirror = false
+shader_parameter/local_y_mirror = false
+shader_parameter/stagger = Vector2(0, 0)
+shader_parameter/cumulative_stagger_flip = false
+shader_parameter/cumulative_stagger = Vector2(0, 0)
+shader_parameter/stagger_frequency = Vector2i(2, 2)
+shader_parameter/flip_frequency = Vector2i(1, 1)
+shader_parameter/basic_feather = 0.0
+shader_parameter/use_mask_size = false
+shader_parameter/mask_size = Vector2(100, 100)
+shader_parameter/edges = 6
+shader_parameter/shape_feather = 0.1
+shader_parameter/sectors = 1
+shader_parameter/clock_feather = 0.0
+shader_parameter/progress = 0.0
+shader_parameter/progress_bias = Vector2(10, 10)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_non_euclid"]
+shader = ExtResource("3_non_euclid_shader")
+shader_parameter/line_color = Color(0.62, 0.94, 1, 0.28)
+shader_parameter/intensity = 1.0
+shader_parameter/density = 8.5
+shader_parameter/warp = 0.4
+shader_parameter/motion_speed = 0.7
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
+bg_color = Color(0.04, 0.055, 0.075, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.62, 0.92, 1, 0.85)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
+bg_color = Color(0.12, 0.19, 0.24, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.82, 0.98, 1, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
+bg_color = Color(0.22, 0.33, 0.4, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.93, 1, 1, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="PauseMenu" type="CanvasLayer"]
+layer = 90
+script = ExtResource("1_pause_script")
+
+[node name="TransitionMaskRect" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_transition")
+z_index = 200
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dimmer" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+z_index = 20
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.74)
+
+[node name="MenuRoot" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+z_index = 100
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="MenuBackdrop" type="ColorRect" parent="MenuRoot"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.015, 0.018, 0.024, 0.98)
+
+[node name="NonEuclidLayer" type="ColorRect" parent="MenuRoot"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("ShaderMaterial_non_euclid")
+color = Color(1, 1, 1, 1)
+
+[node name="FrameTop" type="ColorRect" parent="MenuRoot"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 1.0
+grow_horizontal = 2
+color = Color(0.68, 0.95, 1, 0.82)
+
+[node name="FrameBottom" type="ColorRect" parent="MenuRoot"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+offset_top = -1.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.68, 0.95, 1, 0.82)
+
+[node name="FrameLeft" type="ColorRect" parent="MenuRoot"]
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 1.0
+grow_vertical = 2
+color = Color(0.68, 0.95, 1, 0.82)
+
+[node name="FrameRight" type="ColorRect" parent="MenuRoot"]
+anchors_preset = 11
+anchor_left = 1.0
+anchor_bottom = 1.0
+offset_left = -1.0
+grow_horizontal = 0
+grow_vertical = 2
+color = Color(0.68, 0.95, 1, 0.82)
+
+[node name="ContentMargin" type="MarginContainer" parent="MenuRoot"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 72
+theme_override_constants/margin_top = 52
+theme_override_constants/margin_right = 72
+theme_override_constants/margin_bottom = 52
+
+[node name="RootVBox" type="VBoxContainer" parent="MenuRoot/ContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="HeaderVBox" type="VBoxContainer" parent="MenuRoot/ContentMargin/RootVBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="AccentBar" type="ColorRect" parent="MenuRoot/ContentMargin/RootVBox/HeaderVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 3)
+layout_mode = 2
+color = Color(0.62, 0.94, 1, 0.9)
+
+[node name="PauseTitle" type="Label" parent="MenuRoot/ContentMargin/RootVBox/HeaderVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 68
+text = "PAUSED"
+
+[node name="PauseSubtitle" type="Label" parent="MenuRoot/ContentMargin/RootVBox/HeaderVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.69, 0.92, 1, 0.9)
+theme_override_font_sizes/font_size = 18
+text = "Reality Anchor Engaged"
+
+[node name="TelemetryLabel" type="Label" parent="MenuRoot/ContentMargin/RootVBox/HeaderVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.97, 1, 0.74)
+theme_override_font_sizes/font_size = 14
+text = "MOUSE 0.004 | FOV 75 | PAUSED 0.0s"
+
+[node name="HSeparator" type="HSeparator" parent="MenuRoot/ContentMargin/RootVBox"]
+layout_mode = 2
+
+[node name="BodyRow" type="HBoxContainer" parent="MenuRoot/ContentMargin/RootVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 56
+
+[node name="InfoColumn" type="VBoxContainer" parent="MenuRoot/ContentMargin/RootVBox/BodyRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="InfoHeader" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/InfoColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "SYSTEM"
+
+[node name="InfoText" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/InfoColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.79, 0.86, 0.92, 0.92)
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+text = "Impossible surfaces remain active.\n\nUse gravity shifts to redefine what counts as floor.\n\nThis pause field uses geometric overlays and minimal signal accents."
+
+[node name="ControlHint" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/InfoColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.66, 0.9, 1, 0.94)
+theme_override_font_sizes/font_size = 14
+text = "WASD Move    SPACE Jump    E Gravity Snap    ESC Resume"
+
+[node name="SettingsColumn" type="VBoxContainer" parent="MenuRoot/ContentMargin/RootVBox/BodyRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(460, 0)
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="SettingsHeader" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "SETTINGS"
+
+[node name="SensitivityHeader" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "LOOK SENSITIVITY"
+
+[node name="SensitivityRow" type="HBoxContainer" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SensitivitySlider" type="HSlider" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/SensitivityRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.001
+max_value = 0.02
+step = 0.001
+value = 0.004
+exp_edit = true
+
+[node name="SensitivityValueLabel" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/SensitivityRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 15
+text = "0.004"
+horizontal_alignment = 2
+
+[node name="FovHeader" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "CAMERA FOV"
+
+[node name="FovRow" type="HBoxContainer" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FovSlider" type="HSlider" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/FovRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 60.0
+max_value = 100.0
+step = 1.0
+value = 75.0
+
+[node name="FovValueLabel" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/FovRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 15
+text = "75"
+horizontal_alignment = 2
+
+[node name="ButtonsRow" type="HBoxContainer" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResumeButton" type="Button" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/ButtonsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+text = "Resume"
+
+[node name="ExitButton" type="Button" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/ButtonsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+text = "Exit"
+
+[node name="SnapshotViewport" type="SubViewport" parent="."]
+unique_name_in_owner = true
+disable_3d = true
+transparent_bg = true
+render_target_update_mode = 4
+
+[node name="SnapshotRoot" type="Control" parent="SnapshotViewport"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1

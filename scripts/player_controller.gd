@@ -50,9 +50,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate(up_direction, -motion_event.relative.x * mouse_sensitivity)
 		head.rotate_x(-motion_event.relative.y * mouse_sensitivity)
 		head.rotation.x = clamp(head.rotation.x, -_max_pitch_radians, _max_pitch_radians)
-	elif event.is_action_pressed("ui_cancel"):
-		var next_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED
-		Input.set_mouse_mode(next_mode)
 
 
 func _physics_process(delta: float) -> void:
@@ -238,7 +235,25 @@ func _apply_active_color_for_up(current_up: Vector3) -> void:
 	elif current_up == Vector3.FORWARD:
 		axis_color = Color(0.15, 0.3, 0.8, 1.0)
 
-	RenderingServer.global_shader_parameter_set("active_color", axis_color)
+	# Avoid startup errors when the global shader uniform is not registered.
+	if ProjectSettings.has_setting("shader_globals/active_color") or ProjectSettings.has_setting("rendering/shader_globals/active_color"):
+		RenderingServer.global_shader_parameter_set("active_color", axis_color)
+
+
+func set_mouse_sensitivity(value: float) -> void:
+	mouse_sensitivity = clampf(value, 0.001, 0.02)
+
+
+func get_mouse_sensitivity() -> float:
+	return mouse_sensitivity
+
+
+func set_camera_fov(value: float) -> void:
+	camera.fov = clampf(value, 60.0, 100.0)
+
+
+func get_camera_fov() -> float:
+	return camera.fov
 
 
 func _ensure_input_map() -> void:

@@ -18,6 +18,7 @@ size = Vector3(20, 1, 20)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rrs2g"]
 albedo_color = Color(0, 0.75686276, 1, 1)
+roughness = 0.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_floor"]
 size = Vector3(20, 1, 20)
@@ -31,6 +32,7 @@ size = Vector3(20, 1, 20)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_syx0w"]
 albedo_color = Color(0.21568628, 1, 1, 1)
+roughness = 0.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_ceiling"]
 size = Vector3(20, 1, 20)
@@ -40,12 +42,14 @@ size = Vector3(1, 10, 20)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wa404"]
 albedo_color = Color(0.89637107, 0, 0.23487625, 1)
+roughness = 0.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_wall_x"]
 size = Vector3(1, 10, 20)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_d6f6q"]
 albedo_color = Color(0, 0.96862745, 0, 1)
+roughness = 0.0
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wall_z"]
 size = Vector3(20, 10, 1)
@@ -58,6 +62,7 @@ size = Vector3(20, 10, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_by5s5"]
 albedo_color = Color(1, 0.1882353, 1, 1)
+roughness = 0.0
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_pillar"]
 size = Vector3(1.5, 7, 1.5)
