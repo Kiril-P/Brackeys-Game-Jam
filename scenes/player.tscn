@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://ty88hv3yet32"]
+
+[ext_resource type="Script" uid="uid://d2a7yqum72pu3" path="res://scripts/player_controller.gd" id="1_7fii6"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_h5ux1"]
+radius = 0.35
+height = 1.4
+
+[node name="Player" type="CharacterBody3D"]
+floor_snap_length = 0.25
+script = ExtResource("1_7fii6")
+jump_velocity = 7.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_h5ux1")
+
+[node name="Head" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Head"]
+unique_name_in_owner = true
+current = true
+
+[node name="GravityRayCast3D" type="RayCast3D" parent="Head/Camera3D"]
+unique_name_in_owner = true
+target_position = Vector3(0, 0, -6)
+hit_back_faces = false
