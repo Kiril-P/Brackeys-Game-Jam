@@ -24,11 +24,15 @@ extends CanvasLayer
 @onready var accent_bar: ColorRect = %AccentBar
 @onready var telemetry_label: Label = %TelemetryLabel
 
+const TELEMETRY_UPDATE_INTERVAL: float = 0.1
+
 var _player: PlayerController
 var _transition_material: ShaderMaterial
 var _is_open: bool = false
 var _is_transitioning: bool = false
 var _open_elapsed: float = 0.0
+var _telemetry_update_timer: float = 0.0
+var _last_telemetry_text: String = ""
 
 
 func _ready() -> void:
@@ -70,11 +74,12 @@ func _process(delta: float) -> void:
 	pause_title.modulate = Color(0.9 + 0.1 * pulse, 0.97, 1.0, 1.0)
 	accent_bar.modulate.a = lerpf(0.42, 0.95, pulse)
 	telemetry_label.modulate.a = lerpf(0.65, 1.0, pulse)
-	telemetry_label.text = "MOUSE %.3f | FOV %d | PAUSED %.1fs" % [
-		sensitivity_slider.value,
-		int(round(fov_slider.value)),
-		_open_elapsed
-	]
+
+	_telemetry_update_timer -= delta
+	if _telemetry_update_timer > 0.0:
+		return
+	_telemetry_update_timer = TELEMETRY_UPDATE_INTERVAL
+	_update_telemetry_label()
 
 
 func _bind_signals() -> void:
@@ -109,6 +114,8 @@ func _play_pause_transition(opening: bool) -> void:
 		_sync_controls_with_player()
 		_is_open = true
 		_open_elapsed = 0.0
+		_telemetry_update_timer = 0.0
+		_last_telemetry_text = ""
 		get_tree().paused = true
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		_set_menu_visibility(true)
@@ -168,6 +175,8 @@ func _set_menu_visibility(visible_state: bool) -> void:
 		_set_menu_interactable(false)
 	if not visible_state:
 		_open_elapsed = 0.0
+		_telemetry_update_timer = 0.0
+		_last_telemetry_text = ""
 
 
 func _set_menu_interactable(interactable: bool) -> void:
@@ -206,11 +215,9 @@ func _ensure_fullscreen_overlays() -> void:
 	for node: Control in [transition_mask_rect, dimmer, menu_root]:
 		node.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		node.position = Vector2.ZERO
-		node.size = viewport_size
 	snapshot_viewport.size = Vector2i(int(viewport_size.x), int(viewport_size.y))
 	snapshot_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	snapshot_root.position = Vector2.ZERO
-	snapshot_root.size = viewport_size
 
 
 func _ensure_draw_order() -> void:
@@ -283,6 +290,21 @@ func _on_fov_value_changed(value: float) -> void:
 func _update_setting_labels() -> void:
 	sensitivity_value_label.text = "%.3f" % sensitivity_slider.value
 	fov_value_label.text = "%d" % int(round(fov_slider.value))
+	if _is_open:
+		_telemetry_update_timer = 0.0
+		_update_telemetry_label()
+
+
+func _update_telemetry_label() -> void:
+	var next_text: String = "MOUSE %.3f | FOV %d | PAUSED %.1fs" % [
+		sensitivity_slider.value,
+		int(round(fov_slider.value)),
+		_open_elapsed
+	]
+	if next_text == _last_telemetry_text:
+		return
+	_last_telemetry_text = next_text
+	telemetry_label.text = next_text
 
 
 func _load_settings() -> void:

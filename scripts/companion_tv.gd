@@ -4,6 +4,7 @@ extends Node3D
 @export_range(0.5, 10.0, 0.1) var follow_distance: float = 4.1
 @export_range(-4.0, 4.0, 0.1) var side_offset: float = 1.5
 @export_range(0.2, 6.0, 0.1) var hover_height: float = 2.1
+@export_range(0.1, 3.0, 0.05) var settle_distance_tolerance: float = 0.45
 @export_range(0.6, 8.0, 0.1) var min_follow_distance: float = 3.2
 @export_range(0.8, 12.0, 0.1) var orbit_radius_min: float = 3.6
 @export_range(1.0, 12.0, 0.1) var orbit_radius_max: float = 4.6
@@ -39,6 +40,8 @@ extends Node3D
 @export_range(0.0, 80.0, 0.1) var propeller_spin_speed: float = 24.0
 @export_range(0.0, 80.0, 0.1) var side_propeller_spin_speed: float = 18.0
 @export_range(0.1, 20.0, 0.1) var look_lerp_speed: float = 7.0
+@export_range(1.0, 12.0, 0.1) var dialogue_look_distance: float = 5.0
+@export_range(0.0, 1.0, 0.01) var look_at_player_weight: float = 0.75
 
 @export_group("Interaction")
 @export_range(0.5, 20.0, 0.1) var click_push_strength: float = 7.0
@@ -58,6 +61,8 @@ extends Node3D
 @onready var mouth: MeshInstance3D = %Mouth
 @onready var screen: MeshInstance3D = %Screen
 @onready var hit_area: Area3D = %HitArea
+
+const PLAYER_REFIND_INTERVAL: float = 0.4
 
 var _player: Node3D
 var _velocity: Vector3 = Vector3.ZERO
@@ -82,17 +87,32 @@ var _detour_timer: float = 0.0
 var _detour_fail_count: int = 0
 var _detour_progress_timer: float = 0.0
 var _detour_last_distance: float = INF
-var _detour_side_bias: float = 1.0
+var _detour_side_bias: float = 0.0
 var _objective_stuck_timer: float = 0.0
 var _objective_last_distance: float = INF
 var _objective_progress_timer: float = 0.0
+var _player_refind_timer: float = 0.0
+var _frame_player_up: Vector3 = Vector3.UP
+var _ray_query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.new()
+var _shape_query: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
+var _detour_candidate_buffer: Array[Vector3] = []
+var _teleport_candidate_buffer: Array[Vector3] = []
 
 
 func _ready() -> void:
 	add_to_group("companion")
 	_probe_shape = SphereShape3D.new()
 	_probe_shape.radius = obstacle_probe_radius
+	_shape_query.shape = _probe_shape
+	_shape_query.collision_mask = obstacle_collision_mask
+	_shape_query.collide_with_areas = false
+	_shape_query.collide_with_bodies = true
+	_ray_query.collision_mask = obstacle_collision_mask
+	_ray_query.collide_with_areas = false
+	_ray_query.collide_with_bodies = true
 	_player = _find_player()
+	_refresh_query_excludes()
+	_detour_side_bias = 1.0 if randf() > 0.5 else -1.0
 	_blink_interval = randf_range(1.7, 3.5)
 	if hit_area != null:
 		hit_area.input_event.connect(_on_hit_area_input_event)
@@ -105,6 +125,7 @@ func _ready() -> void:
 	if _player != null:
 		global_position = _compute_follow_target(_player)
 		_objective_last_distance = global_position.distance_to(_compute_follow_target(_player))
+		_frame_player_up = _get_player_up(_player)
 	_last_progress_position = global_position
 
 
@@ -120,12 +141,21 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	_time += delta
 	if _player == null or not is_instance_valid(_player):
-		_player = _find_player()
+		_player_refind_timer -= delta
+		if _player_refind_timer <= 0.0:
+			var found_player: Node3D = _find_player()
+			if found_player != _player:
+				_player = found_player
+				_refresh_query_excludes()
+			_player_refind_timer = PLAYER_REFIND_INTERVAL
 		if _player == null:
 			_update_style(delta, Vector3.ZERO)
 			return
+	else:
+		_player_refind_timer = 0.0
 
-	_update_orbit_anchor(delta)
+	_frame_player_up = _get_player_up(_player)
+
 	var desired_target: Vector3 = _compute_follow_target(_player)
 	var nav_target: Vector3 = _update_detour_state(desired_target, delta)
 	var resolved_target: Vector3 = _resolve_target_with_avoidance(nav_target, desired_target)
@@ -154,16 +184,23 @@ func _find_player() -> Node3D:
 
 func _compute_follow_target(player_node: Node3D) -> Vector3:
 	var up: Vector3 = _get_player_up(player_node)
-	var forward: Vector3 = _planar_forward(-player_node.global_basis.z, up)
-	var right: Vector3 = forward.cross(up).normalized()
-	var orbit_direction: Vector3 = (forward * cos(_orbit_angle) + right * sin(_orbit_angle)).normalized()
-	var target: Vector3 = player_node.global_position + up * hover_height + orbit_direction * _orbit_radius + right * side_offset * 0.35
-	var to_target: Vector3 = target - player_node.global_position
-	var planar: Vector3 = to_target - up * to_target.dot(up)
+	var from_player: Vector3 = global_position - player_node.global_position
+	var planar: Vector3 = from_player - up * from_player.dot(up)
 	var planar_len: float = planar.length()
-	if planar_len < min_follow_distance and planar_len > 0.001:
-		planar = planar.normalized() * min_follow_distance
-		target = player_node.global_position + up * hover_height + planar
+
+	if planar_len < 0.001:
+		# Pick a neutral fallback direction only when overlapping.
+		planar = _planar_forward(-player_node.global_basis.z, up)
+		planar_len = 1.0
+
+	var desired_distance: float = clampf(follow_distance, min_follow_distance, maxf(min_follow_distance + 0.2, orbit_radius_max))
+
+	# If already inside a comfortable ring, don't orbit - just chill.
+	if absf(planar_len - desired_distance) <= settle_distance_tolerance:
+		return global_position
+
+	planar = planar.normalized() * desired_distance
+	var target: Vector3 = player_node.global_position + up * hover_height + planar
 	return target
 
 
@@ -276,13 +313,16 @@ func _update_stuck_recovery(desired_target: Vector3, _resolved_target: Vector3, 
 
 
 func _try_recovery_teleport() -> bool:
-	var up: Vector3 = _get_player_up(_player)
+	var up: Vector3 = _frame_player_up
 	var player_pos: Vector3 = _player.global_position
 	var forward: Vector3 = _planar_forward(-_player.global_basis.z, up)
 	var right: Vector3 = forward.cross(up).normalized()
 
 	var preferred_target: Vector3 = _compute_follow_target(_player)
-	var candidates: Array[Vector3] = [preferred_target]
+	var min_player_distance_sq: float = teleport_min_player_distance * teleport_min_player_distance
+	var candidates: Array[Vector3] = _teleport_candidate_buffer
+	candidates.clear()
+	candidates.append(preferred_target)
 	for radius: float in [teleport_search_radius * 0.6, teleport_search_radius]:
 		for height_offset: float in teleport_height_offsets:
 			for step: int in 12:
@@ -292,7 +332,7 @@ func _try_recovery_teleport() -> bool:
 				candidates.append(candidate)
 
 	for candidate: Vector3 in candidates:
-		if candidate.distance_to(player_pos) < teleport_min_player_distance:
+		if candidate.distance_squared_to(player_pos) < min_player_distance_sq:
 			continue
 		if _is_point_blocked(candidate):
 			continue
@@ -307,25 +347,23 @@ func _try_recovery_teleport() -> bool:
 
 
 func _segment_hits_obstacle(from: Vector3, to: Vector3) -> bool:
-	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var ray_query := PhysicsRayQueryParameters3D.create(from, to, obstacle_collision_mask)
-	ray_query.collide_with_areas = false
-	ray_query.exclude = [self, _player]
-	return not space_state.intersect_ray(ray_query).is_empty()
+	_ray_query.from = from
+	_ray_query.to = to
+	return not get_world_3d().direct_space_state.intersect_ray(_ray_query).is_empty()
 
 
 func _is_lane_clear(from: Vector3, to: Vector3) -> bool:
-	var up: Vector3 = _get_player_up(_player)
+	var up: Vector3 = _frame_player_up
 	var direction: Vector3 = (to - from).normalized()
 	if direction.length_squared() < 0.0001:
 		return true
 	var right: Vector3 = direction.cross(up).normalized()
-	var side_offset: Vector3 = right * obstacle_probe_radius * 0.8
+	var lane_side_offset: Vector3 = right * obstacle_probe_radius * 0.8
 	if _segment_hits_obstacle(from, to):
 		return false
-	if _segment_hits_obstacle(from + side_offset, to + side_offset):
+	if _segment_hits_obstacle(from + lane_side_offset, to + lane_side_offset):
 		return false
-	if _segment_hits_obstacle(from - side_offset, to - side_offset):
+	if _segment_hits_obstacle(from - lane_side_offset, to - lane_side_offset):
 		return false
 	return true
 
@@ -334,14 +372,8 @@ func _is_point_blocked(point: Vector3) -> bool:
 	if _probe_shape == null:
 		return false
 
-	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var shape_query := PhysicsShapeQueryParameters3D.new()
-	shape_query.shape = _probe_shape
-	shape_query.transform = Transform3D(Basis.IDENTITY, point)
-	shape_query.collision_mask = obstacle_collision_mask
-	shape_query.collide_with_areas = false
-	shape_query.exclude = [self, _player]
-	return not space_state.intersect_shape(shape_query, 4).is_empty()
+	_shape_query.transform = Transform3D(Basis.IDENTITY, point)
+	return not get_world_3d().direct_space_state.intersect_shape(_shape_query, 4).is_empty()
 
 
 func _compute_lane_steer(target: Vector3, up: Vector3) -> Vector3:
@@ -367,6 +399,8 @@ func _compute_lane_steer(target: Vector3, up: Vector3) -> Vector3:
 	if right_blocked and not left_blocked:
 		_detour_side_bias = -1.0
 		return -right
+	if is_zero_approx(_detour_side_bias):
+		_detour_side_bias = 1.0 if randf() > 0.5 else -1.0
 	return right * _detour_side_bias
 
 
@@ -398,8 +432,22 @@ func _update_style(delta: float, facing_target: Vector3) -> void:
 
 	_update_face_expression(delta, excitement)
 
-	var up: Vector3 = _get_player_up(_player)
-	var desired_forward: Vector3 = _planar_forward(facing_target - global_position, up)
+	var up: Vector3 = _frame_player_up
+	var look_target: Vector3 = facing_target
+	if _player != null:
+		var focus_point: Vector3 = _player.global_position + up * 1.2
+		var distance_to_player: float = global_position.distance_to(_player.global_position)
+		var desired_distance: float = clampf(follow_distance, min_follow_distance, maxf(min_follow_distance + 0.2, orbit_radius_max))
+		var focus_blend: float = 0.0
+		if dialogue_look_distance > min_follow_distance:
+			focus_blend = 1.0 - clampf((distance_to_player - min_follow_distance) / (dialogue_look_distance - min_follow_distance), 0.0, 1.0)
+		# When the companion has settled next to the player, always face them.
+		if absf(distance_to_player - desired_distance) <= settle_distance_tolerance:
+			look_target = focus_point
+		else:
+			look_target = facing_target.lerp(focus_point, focus_blend * look_at_player_weight)
+
+	var desired_forward: Vector3 = _planar_forward(look_target - global_position, up)
 	if desired_forward.length_squared() < 0.0001:
 		return
 
@@ -506,7 +554,7 @@ func _update_detour_state(desired_target: Vector3, delta: float) -> Vector3:
 		else:
 			_detour_progress_timer += delta
 
-		var reached_detour: bool = detour_distance < 0.85
+		var reached_detour: bool = global_position.distance_squared_to(_detour_target) < 0.85 * 0.85
 		var timed_out: bool = _detour_timer <= 0.0
 		var no_progress: bool = _detour_progress_timer >= detour_progress_timeout
 		if reached_detour or timed_out:
@@ -545,11 +593,12 @@ func _pick_detour_target(desired_target: Vector3, escalate: bool) -> bool:
 
 
 func _build_detour_candidates(desired_target: Vector3, expansion_level: int) -> Array[Vector3]:
-	var up: Vector3 = _get_player_up(_player)
+	var up: Vector3 = _frame_player_up
 	var forward: Vector3 = _planar_forward(desired_target - global_position, up)
 	var right: Vector3 = forward.cross(up).normalized()
 	var expanded_radius: float = detour_base_radius + detour_expand_step * float(expansion_level)
-	var candidates: Array[Vector3] = []
+	var candidates: Array[Vector3] = _detour_candidate_buffer
+	candidates.clear()
 
 	candidates.append(global_position + right * expanded_radius)
 	candidates.append(global_position - right * expanded_radius)
@@ -588,7 +637,7 @@ func _score_route_candidate(candidate: Vector3, desired_target: Vector3) -> floa
 		if player_distance < min_follow_distance:
 			score += (min_follow_distance - player_distance) * 4.0
 
-	var up: Vector3 = _get_player_up(_player)
+	var up: Vector3 = _frame_player_up
 	var forward: Vector3 = _planar_forward(desired_target - global_position, up)
 	var right: Vector3 = forward.cross(up).normalized()
 	var side_sign: float = signf((candidate - global_position).dot(right))
@@ -606,6 +655,7 @@ func _clear_detour_state() -> void:
 	_detour_timer = 0.0
 	_detour_progress_timer = 0.0
 	_detour_last_distance = INF
+	_detour_side_bias = 1.0 if randf() > 0.5 else -1.0
 
 
 func _try_click_reaction(mouse_position: Vector2) -> void:
@@ -638,7 +688,7 @@ func _try_click_reaction(mouse_position: Vector2) -> void:
 	if hit_node != self and not is_ancestor_of(hit_node):
 		return
 	var hit_position: Vector3 = hit.get("position", global_position)
-	if ray_origin.distance_to(hit_position) > interaction_max_reach:
+	if ray_origin.distance_squared_to(hit_position) > interaction_max_reach * interaction_max_reach:
 		return
 	_trigger_click_reaction(hit_position)
 
@@ -657,3 +707,13 @@ func _trigger_click_reaction(hit_position: Vector3) -> void:
 	_knockback_timer = knockback_hold_duration
 	_angry_timer = maxf(angry_duration, knockback_hold_duration + 0.6)
 	_orbit_timer = maxf(_orbit_timer, 1.2)
+
+
+func _refresh_query_excludes() -> void:
+	var excludes: Array[RID] = []
+	if hit_area != null:
+		excludes.append(hit_area.get_rid())
+	if _player != null and _player is CollisionObject3D:
+		excludes.append((_player as CollisionObject3D).get_rid())
+	_ray_query.exclude = excludes
+	_shape_query.exclude = excludes

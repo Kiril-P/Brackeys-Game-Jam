@@ -27,11 +27,17 @@ var _target_up: Vector3 = Vector3.UP
 var _max_pitch_radians: float
 var _gravity_tween: Tween
 var _is_rotating_gravity: bool = false
+var _awaiting_pointer_lock_click: bool = false
 
 func _ready() -> void:
 	add_to_group("player")
 	_ensure_input_map()
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	var profile: PerformanceProfile = get_node_or_null("/root/GamePerformance") as PerformanceProfile
+	if profile != null and profile.pointer_lock_requires_user_gesture():
+		_awaiting_pointer_lock_click = true
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	_max_pitch_radians = deg_to_rad(max_pitch_degrees)
 	up_direction = Vector3.UP
 	_target_up = up_direction
@@ -39,6 +45,14 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _awaiting_pointer_lock_click and event is InputEventMouseButton:
+		var click_event := event as InputEventMouseButton
+		if click_event.button_index == MOUSE_BUTTON_LEFT and click_event.pressed:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			_awaiting_pointer_lock_click = false
+			get_viewport().set_input_as_handled()
+			return
+
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		if _is_rotating_gravity:
 			return
@@ -293,9 +307,9 @@ func _ensure_input_map() -> void:
 		for existing_event: InputEvent in InputMap.action_get_events(action_name):
 			if existing_event is InputEventKey and (existing_event as InputEventKey).keycode == key:
 				return
-		var input_event := InputEventKey.new()
-		input_event.keycode = key
-		InputMap.action_add_event(action_name, input_event)
+		var key_event := InputEventKey.new()
+		key_event.keycode = key
+		InputMap.action_add_event(action_name, key_event)
 
 	register.call("move_forward", KEY_W)
 	register.call("move_back", KEY_S)

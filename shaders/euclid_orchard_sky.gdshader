@@ -10,9 +10,9 @@ uniform float pillar_thickness : hint_range(0.08, 2.0, 0.01) = 0.42;
 uniform float arch_height : hint_range(1.0, 14.0, 0.1) = 4.8;
 uniform float floor_thickness : hint_range(0.02, 1.2, 0.01) = 0.14;
 
-uniform int quality_tier : hint_range(0, 2, 1) = 1; // 0 = low, 1 = medium, 2 = high
-uniform float hit_epsilon : hint_range(0.0005, 0.05, 0.0005) = 0.0035;
-uniform float fog_density : hint_range(0.0, 0.15, 0.001) = 0.035;
+uniform int quality_tier : hint_range(0, 2, 1) = 0; // 0 = low, 1 = medium, 2 = high
+uniform float hit_epsilon : hint_range(0.0005, 0.05, 0.0005) = 0.0055;
+uniform float fog_density : hint_range(0.0, 0.15, 0.001) = 0.028;
 uniform float contrast : hint_range(0.5, 3.0, 0.01) = 1.35;
 uniform vec3 light_dir = vec3(0.65, 0.45, 0.62);
 uniform float orbit_amount : hint_range(0.0, 3.0, 0.01) = 0.16;

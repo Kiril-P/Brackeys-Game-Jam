@@ -297,6 +297,10 @@ var teleport_collision_mask: int = 1 << 15
 ## It will also not be processed.[br][br]
 ## You have to call [method activate] on it to wake it up! Also see [method disable]
 var start_deactivated: bool = false
+var enable_runtime_lod: bool = true
+var _camera_update_counter: int = 0
+var _last_camera_position: Vector3 = Vector3(999999.0, 999999.0, 999999.0)
+var _profile_listener_connected: bool = false
 
 #region INTERNALS
 
@@ -450,6 +454,8 @@ func _ready() -> void:
 	if player_camera == null:
 		player_camera = get_viewport().get_camera_3d()
 		assert(player_camera != null, "Player camera is missing!")
+	_apply_profile_settings()
+	_connect_profile_listener()
 	
 	
 	var mat: ShaderMaterial = ShaderMaterial.new()
@@ -477,7 +483,10 @@ func _process(_delta: float) -> void:
 	
 	if is_teleport:
 		_process_teleports()
-		
+
+	if not _should_render_portal_this_frame():
+		return
+
 	_process_cameras()
 	
 
@@ -688,6 +697,7 @@ func _on_teleport_body_exited(body: Node3D) -> void:
 func _on_window_resize() -> void:
 	if portal_viewport:
 		portal_viewport.size = _calculate_viewport_size()
+	_apply_profile_settings()
 
 #endregion
 
@@ -864,6 +874,61 @@ func _calculate_viewport_size() -> Vector2i:
 		ProjectSettings.get_setting("display/window/size/viewport_width"),
 		ProjectSettings.get_setting("display/window/size/viewport_height")
 	)
+
+
+func _get_performance_profile() -> PerformanceProfile:
+	return get_node_or_null("/root/GamePerformance") as PerformanceProfile
+
+
+func _connect_profile_listener() -> void:
+	var profile: PerformanceProfile = _get_performance_profile()
+	if profile == null or _profile_listener_connected:
+		return
+	profile.profile_changed.connect(_on_performance_profile_changed)
+	_profile_listener_connected = true
+
+
+func _on_performance_profile_changed(_profile_name: String) -> void:
+	_apply_profile_settings()
+
+
+func _apply_profile_settings() -> void:
+	var profile: PerformanceProfile = _get_performance_profile()
+	if profile == null:
+		return
+	viewport_size_mode = PortalViewportSizeMode.FRACTIONAL
+	_viewport_size_fractional = profile.portal_fractional_scale()
+	if portal_viewport != null:
+		portal_viewport.size = _calculate_viewport_size()
+
+
+func _should_render_portal_this_frame() -> bool:
+	if not enable_runtime_lod:
+		return true
+	if player_camera == null:
+		return true
+	if portal_viewport == null:
+		return true
+
+	var profile: PerformanceProfile = _get_performance_profile()
+	if profile == null:
+		return true
+
+	var distance_to_camera: float = global_position.distance_to(player_camera.global_position)
+	if distance_to_camera > profile.portal_deactivate_distance():
+		portal_viewport.set_update_mode(SubViewport.UPDATE_DISABLED)
+		return false
+
+	if portal_viewport.get_update_mode() == SubViewport.UPDATE_DISABLED:
+		portal_viewport.set_update_mode(SubViewport.UPDATE_WHEN_VISIBLE)
+
+	var interval: int = maxi(profile.portal_update_interval_frames(), 1)
+	var moved_enough: bool = player_camera.global_position.distance_squared_to(_last_camera_position) > 0.04
+	_camera_update_counter = (_camera_update_counter + 1) % interval
+	if moved_enough or _camera_update_counter == 0:
+		_last_camera_position = player_camera.global_position
+		return true
+	return false
 
 func _check_tp_interaction(flag: int) -> bool:
 	return (teleport_interactions & flag) > 0
