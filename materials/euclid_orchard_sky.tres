@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/euclid_orchard_sky.gdshader" id="1_7acwy"]
+
+[resource]
+shader = ExtResource("1_7acwy")
+shader_parameter/sky_bottom_color = Color(0.06, 0.09, 0.14, 1)
+shader_parameter/sky_top_color = Color(0.75, 0.9, 1, 1)
+shader_parameter/structure_color = Color(0.95, 0.99, 1, 1)
+shader_parameter/accent_color = Color(0.45, 0.76, 1, 1)
+shader_parameter/cell_size = 14.0
+shader_parameter/pillar_thickness = 0.42
+shader_parameter/arch_height = 4.8
+shader_parameter/floor_thickness = 0.14
+shader_parameter/quality_tier = 1
+shader_parameter/hit_epsilon = 0.0035
+shader_parameter/fog_density = 0.035
+shader_parameter/contrast = 1.35
+shader_parameter/light_dir = Vector3(0.65, 0.45, 0.62)
+shader_parameter/orbit_amount = 0.16
+shader_parameter/orbit_speed = 0.08

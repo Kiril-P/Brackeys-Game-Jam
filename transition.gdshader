@@ -89,10 +89,12 @@ vec2 get_grid_flip(vec2 grid) {
 }
 
 vec2 rotate(vec2 v, float angle) {
-	return mat2(
-		vec2(cos(angle), sin(angle)),
-		vec2(-sin(angle), cos(angle))
-		) * v;
+	float c = cos(angle);
+	float s = sin(angle);
+	return vec2(
+		v.x * c - v.y * s,
+		v.x * s + v.y * c
+	);
 }
 
 vec2 get_edges(float center, float width) {

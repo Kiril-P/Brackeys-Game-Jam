@@ -10,7 +10,10 @@ uniform float motion_speed : hint_range(0.0, 3.0) = 0.75;
 vec2 rotate2d(vec2 v, float angle) {
 	float c = cos(angle);
 	float s = sin(angle);
-	return mat2(vec2(c, -s), vec2(s, c)) * v;
+	return vec2(
+		v.x * c - v.y * s,
+		v.x * s + v.y * c
+	);
 }
 
 void fragment() {

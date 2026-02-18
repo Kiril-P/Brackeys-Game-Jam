@@ -1,9 +1,62 @@
-# Godot 4.5.1 Skills for Cursor
-- Engine: Godot 4.5.1 (Forward+ Vulkan).
-- Shaders: Use `render_mode unshaded` for world objects to get the Antichamber look.
-- Post-Processing: Utilize `CompositorEffect` for global outlines.
-- Portals: Leverage the new Stencil Buffer support for masking viewport textures.
-- Physics: Use `CharacterBody3D` with `move_and_slide()`. Manually handle gravity to allow for 6-axis gravity shifting.
-- Coding Style: GDScript 2.0 (static typing, `unique_names`, and `lambda` functions).
+# AGENT.md - Game Vision and Implementation Direction
 
-Executive SummaryTitle: Fractal Horizons (Working Title)Genre: First-Person Puzzle / ExplorationTheme: Strange PlacesEngine: Godot 4.5.1Platform: PC (Web/Desktop)Core Pillars: Perspective shifting, non-Euclidean navigation, and minimalist surrealism.2. Aesthetics & VibeThe goal is a clinical yet infinite atmosphere. Borrowing from Manifold Garden and Antichamber, the world feels less like a physical location and more like a mathematical dimension.Art Direction: The Sobel Edge LookVisual Style: High-contrast line art using a Sobel Edge Detection post-processing shader.Color Palette: Primarily monochromatic (white backgrounds, black outlines) with single, bold accent colors (Cyan, Magenta, or Yellow) used exclusively to denote interactable surfaces or specific gravity planes.Geometry: Primitive shapes—cubes, spheres, and infinite staircases. No textures; only smooth gradients and sharp lines.The VibeAtmosphere: Quiet, sterile, and awe-inspiring.Audio: Procedural ambient drones that shift pitch based on the player’s current gravity orientation. Footsteps should sound hollow and metallic.3. Core Gameplay Mechanics3.1 Gravity Realignment (The "Manifold" System)The player can walk on any flat surface. This is not a "smooth" transition but a deliberate spatial snap.Mechanism: When the player presses E, a RayCast3D is fired from the center of the camera.Logic: If the RayCast hits a surface within range, the game calculates the surface normal.Transformation: * The player's up_direction is interpolated to match the hit normal.Gravity is recalculated using $g = -9.81 \cdot \vec{n}$, where $\vec{n}$ is the surface normal.The camera performs a smooth tween/quaternion rotation to align the player's view with the new "floor."Puzzle Application: Bridges that look like walls, or "falling" across a massive chasm to land on a distant skyscraper’s side.3.2 Non-Euclidean Portals (The "Antichamber" System)Using Godot’s SubViewport and MeshInstance3D (with a ViewportTexture), we create seamless transitions between disconnected spaces.Recursive Windows: A doorway that looks into a room twice as big as the exterior suggests.World-In-World: A small cube on a pedestal that, when looked at through a specific lens, reveals the player is actually inside that cube.Implementation: * Two linked Camera3D nodes. One tracks the player's relative movement, while the other renders to a texture on the "portal" surface.Use stencil buffers or specialized shaders to ensure the transition is seamless without a "seam" or "frame" visible.4. Level Design Philosophy: "The Loop"Since the theme is "Strange Places," the levels should utilize world-wrapping.The Infinite Falling Loop: If a player jumps off a ledge, they should eventually fall back onto the same ledge from the ceiling (using teleportation triggers or seamless world tiling).Color-Coded Gravity: To prevent the player from getting too lost, specific puzzles require being in "Red Gravity" to activate "Red Switches."The Hidden Geometry: Walking around a pillar 360 degrees might reveal a door that wasn't there during the first 180 degrees of the turn.5. Technical Requirements (Godot 4.5.1)FeatureGodot Node / ResourcePlayer ControllerCharacterBody3D with custom gravity logic.Sobel OutlinesCanvasLayer + ColorRect with a Fragment Shader using SCREEN_TEXTURE.PortalsSubViewport + Sprite3D or MeshInstance3D with ViewportTexture.Gravity TransitionTween for smooth $Quaternion$ rotation.6. Development MilestonesDay 1: Implement "Gravity Snap" and basic Sobel shader.Day 2: Create functional non-Euclidean doorway (SubViewport portal).Day 3: Build 3-4 "Aha!" puzzle rooms.Day 4: Soundscape, UI, and polish.Pro-Tip: In Godot 4.5, use VisibleOnScreenNotifier3D to disable portal Viewports when not being looked at. This will save your frame rate, as rendering multiple viewports is heavy!
+## Project Core
+- Working title: `Fractal Horizons`.
+- Engine: Godot `4.5.1` (Forward+ Vulkan).
+- Genre: first-person puzzle exploration in strange, non-Euclidean spaces.
+- Primary inspirations: `Antichamber` and `Manifold Garden`.
+
+## Current Implementation Status
+- Gravity flipping is already implemented in project history.
+- Portals are already implemented and are a core system.
+- Going forward, design and implementation should follow the updated loop below.
+
+## Updated Core Fantasy
+The player explores a 4D-feeling world of impossible geometry and stabilizes unstable fractal objects.  
+A companion guide character travels with the player, helps teach mechanics, and delivers humorous voice lines.
+
+## Companion Guide Direction
+- Companion style inspiration: Dani's Billy from Karlsen (friendly, comedic guide role).
+- The guide explains goals, introduces mechanics, and provides reactive hints.
+- Voice lines should be funny but still useful for player clarity and pacing.
+
+## Gravity Rules (Important Change)
+- Remove direct player-controlled gravity switching as the main interaction.
+- The companion always tries to stand on the nearest valid wall/surface.
+- When the companion attaches to a new surface, gravity updates for both:
+  - companion gravity aligns to that surface normal
+  - player gravity also aligns to that same surface
+- This shared gravity shift is the core moment-to-moment gameplay loop.
+
+## Progression Structure
+- The player starts from a central cube hub with four enterable sides.
+- Each side acts as a portal to a different puzzle room/level.
+- Looking through a cube side should show an unstable object associated with that room.
+- Entering that side transports the player to the room containing that object.
+- The room is locked until the local puzzle is solved and the object is stabilized.
+- After stabilization, exit/unlock flow returns the player to hub progression.
+
+## Puzzle and Space Design
+- Use portal mechanics for spatial paradoxes, misdirection, and layered puzzle logic.
+- Most levels should be enclosed spaces for controlled puzzle readability.
+- Some levels can open into vast outer-space environments for contrast and scale.
+- Every room should center on one stabilization objective tied to its local geometry.
+
+## Visual and Rendering Direction
+- Keep surreal, minimal, high-contrast world readability.
+- Space background should be an infinite fractal field.
+- Target look for open space: 3D Euclid Orchard aesthetic.
+- Implement fractal-space visuals with GLSL ray marching shaders.
+- Use unshaded world materials when needed to preserve stylized graphic clarity.
+
+## Technical Notes for Agents
+- Portals: continue leveraging SubViewport-based portal rendering and stencil/masking workflows.
+- Physics controller: `CharacterBody3D` with `move_and_slide()` and manually managed gravity vectors.
+- Camera orientation should remain stable during shared gravity realignments.
+- Optimize expensive visuals/portals when off-screen to preserve frame rate.
+
+## Design Guardrails
+- Prioritize readability of puzzle intent over visual noise.
+- Companion behavior must feel reliable: nearest-surface targeting should be predictable.
+- Gravity transitions should feel intentional and teachable, not random.
+- Progression gating must be clear: no puzzle completion, no room exit.

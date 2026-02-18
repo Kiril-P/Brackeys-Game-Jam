@@ -181,6 +181,65 @@ func _align_basis_to_up(old_up: Vector3, new_up: Vector3) -> void:
 	)
 
 
+func on_teleport(portal: Portal3D) -> void:
+	if _gravity_tween != null:
+		_gravity_tween.kill()
+		_gravity_tween = null
+	_is_rotating_gravity = false
+
+	if portal != null:
+		velocity = portal.to_exit_direction(velocity)
+		velocity = _clamp_small_velocity_components(velocity)
+
+	if _target_up.is_zero_approx():
+		_target_up = up_direction if not up_direction.is_zero_approx() else Vector3.UP
+	_target_up = _target_up.normalized()
+	up_direction = _target_up
+
+	if _needs_post_teleport_snap(_target_up):
+		_snap_basis_to_up(_target_up)
+	else:
+		global_basis = global_basis.orthonormalized()
+	head.rotation = Vector3(clampf(head.rotation.x, -_max_pitch_radians, _max_pitch_radians), 0.0, 0.0)
+
+
+func _clamp_small_velocity_components(v: Vector3) -> Vector3:
+	const EPSILON := 0.0005
+	var clamped := v
+	if absf(clamped.x) < EPSILON:
+		clamped.x = 0.0
+	if absf(clamped.y) < EPSILON:
+		clamped.y = 0.0
+	if absf(clamped.z) < EPSILON:
+		clamped.z = 0.0
+	return clamped
+
+
+func _needs_post_teleport_snap(expected_up: Vector3) -> bool:
+	var basis_up: Vector3 = global_basis.y.normalized()
+	if basis_up.is_zero_approx():
+		return true
+	# Snap only if current body up is meaningfully off from gravity up.
+	return basis_up.dot(expected_up) < 0.92
+
+
+func _snap_basis_to_up(new_up: Vector3) -> void:
+	var projected_forward: Vector3 = (-camera.global_basis.z - new_up * (-camera.global_basis.z).dot(new_up)).normalized()
+	if projected_forward.length_squared() < 0.0001:
+		projected_forward = (-global_basis.z - new_up * (-global_basis.z).dot(new_up)).normalized()
+	if projected_forward.length_squared() < 0.0001:
+		var fallback_axis: Vector3 = Vector3.RIGHT if abs(new_up.dot(Vector3.RIGHT)) < 0.95 else Vector3.FORWARD
+		projected_forward = (fallback_axis - new_up * fallback_axis.dot(new_up)).normalized()
+
+	var old_planar_forward: Vector3 = (-global_basis.z - new_up * (-global_basis.z).dot(new_up)).normalized()
+	if old_planar_forward.length_squared() > 0.0001 and projected_forward.dot(old_planar_forward) < 0.0:
+		projected_forward = -projected_forward
+
+	var right: Vector3 = projected_forward.cross(new_up).normalized()
+	var back: Vector3 = right.cross(new_up).normalized()
+	global_basis = Basis(right, new_up, back).orthonormalized()
+
+
 func _to_cardinal_axis(direction: Vector3) -> Vector3:
 	var x_abs: float = abs(direction.x)
 	var y_abs: float = abs(direction.y)

@@ -561,9 +561,10 @@ func _process_teleports() -> void:
 				exit_portal._process_cameras()
 			
 			# Resolve teleport interactions
+			# PLAYER_UPRIGHT's previous world-axis reset conflicted with custom gravity controllers.
+			# Keep this as a compatibility no-op and let player scripts handle post-teleport alignment.
 			if tp_meta.is_player and _check_tp_interaction(TeleportInteractions.PLAYER_UPRIGHT):
-				get_tree().create_tween().tween_property(teleportable, "rotation:x", 0, 0.3)
-				get_tree().create_tween().tween_property(teleportable, "rotation:z", 0, 0.3)
+				pass
 			
 			if _check_tp_interaction(TeleportInteractions.CALLBACK):
 				if teleportable.has_method(ON_TELEPORT_CALLBACK):
@@ -775,31 +776,45 @@ func _enable_mesh_clipping(meta: TeleportableMeta, along_portal: Portal3D) -> vo
 func _disable_mesh_clipping(mi: MeshInstance3D) -> void:
 	mi.set_instance_shader_parameter("portal_clip_active", false)
 
+func _portal_local_flip_basis() -> Basis:
+	# 180-degree turn in portal-local space. Keep all mapping APIs consistent.
+	return Basis(Vector3(-1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, -1.0))
+
+func _flip_local_transform(local_transform: Transform3D) -> Transform3D:
+	var flip_basis := _portal_local_flip_basis()
+	return Transform3D(
+		(flip_basis * local_transform.basis).orthonormalized(),
+		flip_basis * local_transform.origin
+	)
+
+func _flip_local_direction(local_direction: Vector3) -> Vector3:
+	return _portal_local_flip_basis() * local_direction
+
+func _flip_local_position(local_position: Vector3) -> Vector3:
+	return _portal_local_flip_basis() * local_position
+
 ## [b]Crucial[/b] piece of a portal - transforming where objects should appear 
 ## on the other side. Used for both cameras and teleports.
 func to_exit_transform(g_transform: Transform3D) -> Transform3D:
-	var relative_to_portal: Transform3D = global_transform.affine_inverse() * g_transform
-	var flipped: Transform3D = relative_to_portal.rotated(Vector3.UP, PI)
-	var relative_to_target = exit_portal.global_transform * flipped
-	return relative_to_target
+	var local_transform: Transform3D = global_transform.affine_inverse() * g_transform
+	var flipped_local: Transform3D = _flip_local_transform(local_transform)
+	return exit_portal.global_transform * flipped_local
 
 
 ## Similar to [method to_exit_transform], but this one uses [member global_basis] for calculations, 
 ## so it [b]only transforms rotation[/b], since portal scale should aways be 1. Use for transforming
 ## directions.
 func to_exit_direction(real: Vector3) -> Vector3:
-	var relative_to_portal: Vector3 = global_basis.inverse() * real
-	var flipped: Vector3 = relative_to_portal.rotated(Vector3.UP, PI)
-	var relative_to_target: Vector3 = exit_portal.global_basis * flipped
-	return relative_to_target
+	var local_direction: Vector3 = global_basis.inverse() * real
+	var flipped_local: Vector3 = _flip_local_direction(local_direction)
+	return exit_portal.global_basis * flipped_local
 
 
 ## Similar to [method to_exit_transform], but expects a global position.
 func to_exit_position(g_pos: Vector3) -> Vector3:
 	var local: Vector3 = global_transform.affine_inverse() * g_pos
-	var rotated = local.rotated(Vector3.UP, PI)
-	var local_at_exit: Vector3 = exit_portal.global_transform * rotated
-	return local_at_exit
+	var flipped_local: Vector3 = _flip_local_position(local)
+	return exit_portal.global_transform * flipped_local
 
 
 ## Calculates the dot product of portal's forward vector with the global 
