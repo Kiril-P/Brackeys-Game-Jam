@@ -12,6 +12,8 @@ uniform float normal_threshold : hint_range(0.001, 1.0, 0.001) = 0.12;
 uniform float depth_weight : hint_range(0.0, 2.0, 0.01) = 0.75;
 uniform float normal_weight : hint_range(0.0, 2.0, 0.01) = 1.0;
 uniform float edge_softness : hint_range(0.0001, 0.25, 0.0001) = 0.02;
+uniform float portal_roughness_tag : hint_range(0.0, 1.0) = 0.137;
+uniform float portal_tag_epsilon : hint_range(0.0001, 0.05, 0.0001) = 0.01;
 
 float sample_depth(vec2 uv) {
 	return texture(depth_texture, uv).r;
@@ -20,6 +22,10 @@ float sample_depth(vec2 uv) {
 vec3 sample_normal(vec2 uv) {
 	vec3 packed = texture(normal_roughness_texture, uv).rgb;
 	return normalize(packed * 2.0 - 1.0);
+}
+
+float sample_roughness(vec2 uv) {
+	return texture(normal_roughness_texture, uv).a;
 }
 
 void vertex() {
@@ -48,6 +54,16 @@ void fragment() {
 	float d_b  = sample_depth(uv_b);
 	float d_br = sample_depth(uv_br);
 
+	float r_tl = sample_roughness(uv_tl);
+	float r_t  = sample_roughness(uv_t);
+	float r_tr = sample_roughness(uv_tr);
+	float r_l  = sample_roughness(uv_l);
+	float r_c  = sample_roughness(SCREEN_UV);
+	float r_r  = sample_roughness(uv_r);
+	float r_bl = sample_roughness(uv_bl);
+	float r_b  = sample_roughness(uv_b);
+	float r_br = sample_roughness(uv_br);
+
 	float d_sobel_x = (-d_tl - 2.0 * d_l - d_bl) + (d_tr + 2.0 * d_r + d_br);
 	float d_sobel_y = (-d_tl - 2.0 * d_t - d_tr) + (d_bl + 2.0 * d_b + d_br);
 	float depth_edge = length(vec2(d_sobel_x, d_sobel_y));
@@ -68,6 +84,18 @@ void fragment() {
 	float depth_mask = smoothstep(depth_threshold, depth_threshold + edge_softness, depth_edge);
 	float normal_mask = smoothstep(normal_threshold, normal_threshold + edge_softness, normal_edge);
 	float edge_mask = clamp(depth_mask * depth_weight + normal_mask * normal_weight, 0.0, 1.0);
+	bool portal_tag_present = abs(r_tl - portal_roughness_tag) <= portal_tag_epsilon
+		|| abs(r_t - portal_roughness_tag) <= portal_tag_epsilon
+		|| abs(r_tr - portal_roughness_tag) <= portal_tag_epsilon
+		|| abs(r_l - portal_roughness_tag) <= portal_tag_epsilon
+		|| abs(r_c - portal_roughness_tag) <= portal_tag_epsilon
+		|| abs(r_r - portal_roughness_tag) <= portal_tag_epsilon
+		|| abs(r_bl - portal_roughness_tag) <= portal_tag_epsilon
+		|| abs(r_b - portal_roughness_tag) <= portal_tag_epsilon
+		|| abs(r_br - portal_roughness_tag) <= portal_tag_epsilon;
+	if (portal_tag_present) {
+		edge_mask = 0.0;
+	}
 
 	vec4 scene_color = texture(screen_texture, SCREEN_UV);
 	vec3 mixed_color = mix(scene_color.rgb, line_color.rgb, edge_mask * line_color.a);
