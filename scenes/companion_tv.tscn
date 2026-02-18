@@ -1,0 +1,230 @@
+[gd_scene load_steps=20 format=3 uid="uid://cdosweh6kg2y0"]
+
+[ext_resource type="Script" uid="uid://bivagehp7e8k8" path="res://scripts/companion_tv.gd" id="1_n5rwe"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.32000002, 0.305, 0.26000002, 1)
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+size = Vector3(1.2, 0.8, 0.7)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bezel"]
+albedo_color = Color(0.06, 0.06, 0.06, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_bezel"]
+size = Vector3(0.88, 0.55, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_screen"]
+albedo_color = Color(0.18, 0.46, 0.34, 1)
+roughness = 0.2
+emission_enabled = true
+emission = Color(0.25, 0.95, 0.65, 1)
+emission_energy_multiplier = 1.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_screen"]
+size = Vector3(0.74, 0.42, 0.03)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_face"]
+albedo_color = Color(0.02, 0.02, 0.02, 1)
+emission_enabled = true
+emission = Color(0.82, 1, 0.9, 1)
+emission_energy_multiplier = 1.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_eye"]
+size = Vector3(0.13, 0.08, 0.01)
+
+[sub_resource type="BoxMesh" id="BoxMesh_mouth"]
+size = Vector3(0.2, 0.03, 0.01)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_accent"]
+albedo_color = Color(0.92, 0.64, 0.26, 1)
+roughness = 0.28
+
+[sub_resource type="SphereMesh" id="SphereMesh_knob"]
+radius = 0.07
+height = 0.14
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_metal"]
+albedo_color = Color(0.72, 0.74, 0.78, 1)
+metallic = 0.55
+roughness = 0.25
+
+[sub_resource type="BoxMesh" id="BoxMesh_foot"]
+size = Vector3(0.14, 0.06, 0.24)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_antenna"]
+top_radius = 0.015
+bottom_radius = 0.015
+height = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_mast"]
+top_radius = 0.03
+bottom_radius = 0.03
+height = 0.35
+
+[sub_resource type="SphereMesh" id="SphereMesh_hub"]
+radius = 0.055
+height = 0.11
+
+[sub_resource type="BoxMesh" id="BoxMesh_blade"]
+size = Vector3(0.9, 0.04, 0.12)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_hit"]
+radius = 0.8
+
+[node name="CompanionTV" type="Node3D"]
+script = ExtResource("1_n5rwe")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="Body" type="MeshInstance3D" parent="VisualRoot"]
+material_override = SubResource("StandardMaterial3D_body")
+mesh = SubResource("BoxMesh_body")
+
+[node name="Bezel" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.351)
+material_override = SubResource("StandardMaterial3D_bezel")
+mesh = SubResource("BoxMesh_bezel")
+
+[node name="Screen" type="MeshInstance3D" parent="VisualRoot"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.374)
+material_override = SubResource("StandardMaterial3D_screen")
+mesh = SubResource("BoxMesh_screen")
+
+[node name="EyeL" type="MeshInstance3D" parent="VisualRoot"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.08, -0.392)
+material_override = SubResource("StandardMaterial3D_face")
+mesh = SubResource("BoxMesh_eye")
+
+[node name="EyeR" type="MeshInstance3D" parent="VisualRoot"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.08, -0.392)
+material_override = SubResource("StandardMaterial3D_face")
+mesh = SubResource("BoxMesh_eye")
+
+[node name="Mouth" type="MeshInstance3D" parent="VisualRoot"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.84804815, 0.52991927, 0, -0.52991927, 0.84804815, 0, -0.08, -0.392)
+material_override = SubResource("StandardMaterial3D_face")
+mesh = SubResource("BoxMesh_mouth")
+
+[node name="KnobL" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 0.9800666, -0.19866933, 0, 0.19866933, 0.9800666, 0.63, 0.1, -0.18)
+material_override = SubResource("StandardMaterial3D_accent")
+mesh = SubResource("SphereMesh_knob")
+
+[node name="KnobR" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 0.9800666, -0.19866933, 0, 0.19866933, 0.9800666, 0.63, -0.06, -0.18)
+material_override = SubResource("StandardMaterial3D_accent")
+mesh = SubResource("SphereMesh_knob")
+
+[node name="FootL" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(0.9780309, 0, -0.2084599, 0, 1, 0, 0.2084599, 0, 0.9780309, -0.25, -0.43, 0.2)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_foot")
+
+[node name="FootR" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(0.9780309, 0, 0.2084599, 0, 1, 0, -0.2084599, 0, 0.9780309, 0.25, -0.43, 0.2)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_foot")
+
+[node name="AntennaL" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(0.9393727, 0.34289783, 0, -0.29695824, 0.8135206, 0.5, 0.17144892, -0.46968636, 0.8660254, 0.64271766, -0.1451695, -0.30339766)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("CylinderMesh_antenna")
+
+[node name="AntennaR" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(0.9393727, -0.34289783, 0, 0.29695824, 0.8135206, 0.5, -0.17144892, -0.46968636, 0.8660254, -0.6255965, -0.1451695, -0.30339766)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("CylinderMesh_antenna")
+
+[node name="AntennaTipL" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.19, 0.7442558, 0.11)
+material_override = SubResource("StandardMaterial3D_accent")
+mesh = SubResource("SphereMesh_knob")
+
+[node name="AntennaTipR" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.19, 0.7442558, 0.11)
+material_override = SubResource("StandardMaterial3D_accent")
+mesh = SubResource("SphereMesh_knob")
+
+[node name="PropellerPivot" type="Node3D" parent="VisualRoot"]
+unique_name_in_owner = true
+transform = Transform3D(0.9396926, 0, 0.34202015, 0, 1, 0, -0.34202015, 0, 0.9396926, 0, 0.62, 0.02)
+
+[node name="Mast" type="MeshInstance3D" parent="VisualRoot/PropellerPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.10574424, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("CylinderMesh_mast")
+
+[node name="Hub" type="MeshInstance3D" parent="VisualRoot/PropellerPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.094255805, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("SphereMesh_hub")
+
+[node name="BladeA" type="MeshInstance3D" parent="VisualRoot/PropellerPivot"]
+transform = Transform3D(0.99984777, 0, 0.017452389, 0, 1, 0, -0.017452389, 0, 0.99984777, 0, 0.094255805, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_blade")
+
+[node name="BladeB" type="MeshInstance3D" parent="VisualRoot/PropellerPivot"]
+transform = Transform3D(-0.48480952, 0, 0.8746197, 0, 1, 0, -0.8746197, 0, -0.48480952, 0, 0.094255805, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_blade")
+
+[node name="BladeC" type="MeshInstance3D" parent="VisualRoot/PropellerPivot"]
+transform = Transform3D(-0.51503813, 0, -0.85716736, 0, 1, 0, 0.85716736, 0, -0.51503813, 0, 0.094255805, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_blade")
+
+[node name="SidePropellerPivotL" type="Node3D" parent="VisualRoot"]
+unique_name_in_owner = true
+transform = Transform3D(0.9702957, 0, 0.2419219, 0, 1, 0, -0.2419219, 0, 0.9702957, -0.67, 0.05, 0)
+
+[node name="LHub" type="MeshInstance3D" parent="VisualRoot/SidePropellerPivotL"]
+transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("SphereMesh_hub")
+
+[node name="LBladeA" type="MeshInstance3D" parent="VisualRoot/SidePropellerPivotL"]
+transform = Transform3D(0.6665582, 0, 0.74545395, 0, 1, 0, -0.74545395, 0, 0.6665582, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_blade")
+
+[node name="LBladeB" type="MeshInstance3D" parent="VisualRoot/SidePropellerPivotL"]
+transform = Transform3D(-0.6665582, 0, 0.74545395, 0, 1, 0, -0.74545395, 0, -0.6665582, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_blade")
+
+[node name="SidePropellerPivotR" type="Node3D" parent="VisualRoot"]
+unique_name_in_owner = true
+transform = Transform3D(0.9702957, 0, -0.2419219, 0, 1, 0, 0.2419219, 0, 0.9702957, 0.67, 0.05, 0)
+
+[node name="RHub" type="MeshInstance3D" parent="VisualRoot/SidePropellerPivotR"]
+transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("SphereMesh_hub")
+
+[node name="RBladeA" type="MeshInstance3D" parent="VisualRoot/SidePropellerPivotR"]
+transform = Transform3D(0.6665582, 0, -0.74545395, 0, 1, 0, 0.74545395, 0, 0.6665582, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_blade")
+
+[node name="RBladeB" type="MeshInstance3D" parent="VisualRoot/SidePropellerPivotR"]
+transform = Transform3D(-0.6665582, 0, -0.74545395, 0, 1, 0, 0.74545395, 0, -0.6665582, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_metal")
+mesh = SubResource("BoxMesh_blade")
+
+[node name="HitArea" type="Area3D" parent="."]
+unique_name_in_owner = true
+input_ray_pickable = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HitArea"]
+shape = SubResource("SphereShape3D_hit")

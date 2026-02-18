@@ -9,7 +9,7 @@
 [ext_resource type="Material" uid="uid://dcfkcyddxkglf" path="res://addons/portals/materials/editor-preview-portal-material.tres" id="7_7r4gi"]
 [ext_resource type="Script" uid="uid://bxcel82b180o3" path="res://addons/portals/scripts/portal_boxmesh.gd" id="8_w7kh3"]
 [ext_resource type="Material" path="res://materials/euclid_orchard_sky.tres" id="10_bk7ad"]
-[ext_resource type="PackedScene" uid="uid://cdosweh6kg2y0" path="res://scenes/companion_tv.tscn" id="10_w7kh3"]
+[ext_resource type="PackedScene" path="res://scenes/companion.tscn" id="11_comp1"]
 
 [sub_resource type="Sky" id="Sky_rwgxs"]
 sky_material = ExtResource("10_bk7ad")
@@ -72,6 +72,14 @@ shadow_enabled = true
 
 [node name="Player" parent="." instance=ExtResource("2_8hsyg")]
 transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 10.954033, 7.855589)
+
+[node name="Companion" parent="." node_paths=PackedStringArray("player") instance=ExtResource("11_comp1")]
+player = NodePath("../Player")
+follow_offset = null
+detect_radius = null
+follow_speed = null
+attach_duration = null
+change_cooldown = null
 
 [node name="HUD" parent="." instance=ExtResource("5_71j4m")]
 
@@ -517,8 +525,6 @@ mesh = SubResource("ArrayMesh_e3hyu")
 [node name="Collider" type="CollisionShape3D" parent="Level Cube/Portal3D5/TeleportArea"]
 shape = SubResource("BoxShape3D_q5onr")
 
-[node name="CompanionTV" parent="." instance=ExtResource("10_w7kh3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.474213, -2.4519253)
-bob_amplitude = 0.33
+[connection signal="gravity_changed" from="Companion" to="Player" method="receive_companion_gravity"]
 
 [editable path="Player"]
