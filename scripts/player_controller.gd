@@ -13,11 +13,16 @@ class_name PlayerController
 @export_range(1.0, 20.0, 0.1) var up_transition_speed: float = 8.0
 
 @export_group("Look")
-@export_range(0.001, 0.02, 0.001) var mouse_sensitivity: float = 0.004
+@export_range(0.0005, 0.02, 0.0005) var mouse_sensitivity: float = 0.001
 @export_range(45.0, 89.0, 0.1) var max_pitch_degrees: float = 82.0
 
 @export_group("Gravity")
 @export_range(0.05, 1.0, 0.01) var gravity_rotate_duration: float = 0.3
+
+@export_group("Stairs")
+@export_range(0.05, 1.0, 0.01) var max_step_height: float = 0.28
+@export_range(0.05, 1.5, 0.01) var max_step_down: float = 0.5
+@export_range(0.001, 0.1, 0.001) var stair_test_margin: float = 0.001
 
 @onready var head: Node3D = %Head
 @onready var camera: Camera3D = %Camera3D
@@ -66,7 +71,15 @@ func _physics_process(delta: float) -> void:
 	_handle_gravity_input()
 	_update_up_direction(delta)
 	_apply_movement(delta)
+	var was_on_floor: bool = is_on_floor()
+	var stepped_up: bool = _try_step_up(delta)
+	if stepped_up:
+		# Horizontal motion was already consumed by the step-up teleport.
+		var vertical_speed: float = velocity.dot(up_direction)
+		velocity = up_direction * vertical_speed
 	move_and_slide()
+	if not stepped_up:
+		_try_step_down(was_on_floor)
 
 
 func _handle_gravity_input() -> void:
@@ -135,6 +148,86 @@ func _apply_movement(delta: float) -> void:
 		vertical_velocity = max(vertical_velocity, -max_fall_speed)
 
 	velocity = horizontal_velocity + up_direction * vertical_velocity
+
+
+func _try_step_up(delta: float) -> bool:
+	if not is_on_floor():
+		return false
+	if _is_rotating_gravity:
+		return false
+	if velocity.dot(up_direction) > 0.0:
+		return false
+
+	var frame_motion: Vector3 = velocity * delta
+	var horizontal_motion: Vector3 = frame_motion - up_direction * frame_motion.dot(up_direction)
+	if horizontal_motion.length_squared() < 0.000001:
+		return false
+
+	var step_height_motion: Vector3 = up_direction * (max_step_height * 2.0)
+	var elevated_transform: Transform3D = global_transform.translated(step_height_motion)
+	if _body_test_motion(elevated_transform, horizontal_motion):
+		return false
+
+	var forward_transform: Transform3D = elevated_transform.translated(horizontal_motion)
+	var down_motion: Vector3 = -up_direction * (max_step_height * 2.0)
+	var floor_result := PhysicsTestMotionResult3D.new()
+	if not _body_test_motion(forward_transform, down_motion, floor_result):
+		return false
+
+	var floor_dot: float = floor_result.get_collision_normal().dot(up_direction)
+	if floor_dot < cos(floor_max_angle):
+		return false
+
+	var stepped_transform: Transform3D = forward_transform.translated(floor_result.get_travel())
+	var step_delta_along_up: float = (stepped_transform.origin - global_transform.origin).dot(up_direction)
+	if step_delta_along_up <= 0.001:
+		return false
+	if step_delta_along_up > max_step_height + stair_test_margin:
+		return false
+
+	global_transform = stepped_transform
+	apply_floor_snap()
+
+	# Don't keep downward velocity after successful stair step-up.
+	var vertical_speed: float = velocity.dot(up_direction)
+	if vertical_speed < 0.0:
+		velocity -= up_direction * vertical_speed
+	return true
+
+
+func _try_step_down(was_on_floor: bool) -> void:
+	if not was_on_floor:
+		return
+	if is_on_floor():
+		return
+	if _is_rotating_gravity:
+		return
+	if velocity.dot(up_direction) > 0.0:
+		return
+
+	var down_motion: Vector3 = -up_direction * max_step_down
+	var floor_result := PhysicsTestMotionResult3D.new()
+	if not _body_test_motion(global_transform, down_motion, floor_result):
+		return
+
+	var floor_dot: float = floor_result.get_collision_normal().dot(up_direction)
+	if floor_dot < cos(floor_max_angle):
+		return
+
+	global_transform = global_transform.translated(floor_result.get_travel())
+	apply_floor_snap()
+
+	var vertical_speed: float = velocity.dot(up_direction)
+	if vertical_speed < 0.0:
+		velocity -= up_direction * vertical_speed
+
+
+func _body_test_motion(from_transform: Transform3D, motion: Vector3, result: PhysicsTestMotionResult3D = null) -> bool:
+	var params := PhysicsTestMotionParameters3D.new()
+	params.from = from_transform
+	params.motion = motion
+	params.margin = stair_test_margin
+	return PhysicsServer3D.body_test_motion(get_rid(), params, result)
 
 
 func _set_target_up(new_up: Vector3) -> void:
@@ -285,7 +378,7 @@ func _apply_active_color_for_up(current_up: Vector3) -> void:
 
 
 func set_mouse_sensitivity(value: float) -> void:
-	mouse_sensitivity = clampf(value, 0.001, 0.02)
+	mouse_sensitivity = clampf(value, 0.0005, 0.02)
 
 
 func get_mouse_sensitivity() -> float:

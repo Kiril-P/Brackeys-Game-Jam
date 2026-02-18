@@ -82,12 +82,12 @@ func sky_fallback_gradient_only() -> bool:
 func portal_fractional_scale() -> float:
 	match _profile:
 		Profile.HIGH:
-			return 0.5
+			return 1.0
 		Profile.LOW_END_PC:
-			return 0.35
+			return 0.5
 		Profile.WEB:
-			return 0.25
-	return 0.5
+			return 0.35
+	return 1.0
 
 
 func portal_update_interval_frames() -> int:

@@ -896,8 +896,11 @@ func _apply_profile_settings() -> void:
 	var profile: PerformanceProfile = _get_performance_profile()
 	if profile == null:
 		return
-	viewport_size_mode = PortalViewportSizeMode.FRACTIONAL
-	_viewport_size_fractional = profile.portal_fractional_scale()
+	if profile.get_profile() == PerformanceProfile.Profile.HIGH:
+		viewport_size_mode = PortalViewportSizeMode.FULL
+	else:
+		viewport_size_mode = PortalViewportSizeMode.FRACTIONAL
+		_viewport_size_fractional = profile.portal_fractional_scale()
 	if portal_viewport != null:
 		portal_viewport.size = _calculate_viewport_size()
 

@@ -14,8 +14,12 @@ extends CanvasLayer
 @onready var menu_root: Control = %MenuRoot
 @onready var snapshot_viewport: SubViewport = %SnapshotViewport
 @onready var snapshot_root: Control = %SnapshotRoot
-@onready var sensitivity_slider: HSlider = %SensitivitySlider
-@onready var sensitivity_value_label: Label = %SensitivityValueLabel
+@onready var sensitivity_low_btn: Button = %SensitivityLowBtn
+@onready var sensitivity_medium_btn: Button = %SensitivityMediumBtn
+@onready var sensitivity_high_btn: Button = %SensitivityHighBtn
+@onready var profile_high_btn: Button = %ProfileHighBtn
+@onready var profile_low_end_btn: Button = %ProfileLowEndBtn
+@onready var profile_web_btn: Button = %ProfileWebBtn
 @onready var fov_slider: HSlider = %FovSlider
 @onready var fov_value_label: Label = %FovValueLabel
 @onready var resume_button: Button = %ResumeButton
@@ -25,6 +29,12 @@ extends CanvasLayer
 @onready var telemetry_label: Label = %TelemetryLabel
 
 const TELEMETRY_UPDATE_INTERVAL: float = 0.1
+
+const SENSITIVITY_LOW: float = 0.0005
+const SENSITIVITY_MEDIUM: float = 0.001
+const SENSITIVITY_HIGH: float = 0.002
+
+var _current_sensitivity: float = SENSITIVITY_MEDIUM
 
 var _player: PlayerController
 var _transition_material: ShaderMaterial
@@ -85,7 +95,12 @@ func _process(delta: float) -> void:
 func _bind_signals() -> void:
 	resume_button.pressed.connect(_on_resume_pressed)
 	exit_button.pressed.connect(_on_exit_pressed)
-	sensitivity_slider.value_changed.connect(_on_sensitivity_value_changed)
+	sensitivity_low_btn.pressed.connect(func() -> void: _on_sensitivity_preset_pressed(SENSITIVITY_LOW))
+	sensitivity_medium_btn.pressed.connect(func() -> void: _on_sensitivity_preset_pressed(SENSITIVITY_MEDIUM))
+	sensitivity_high_btn.pressed.connect(func() -> void: _on_sensitivity_preset_pressed(SENSITIVITY_HIGH))
+	profile_high_btn.pressed.connect(func() -> void: _on_performance_profile_pressed("high"))
+	profile_low_end_btn.pressed.connect(func() -> void: _on_performance_profile_pressed("low_end_pc"))
+	profile_web_btn.pressed.connect(func() -> void: _on_performance_profile_pressed("web"))
 	fov_slider.value_changed.connect(_on_fov_value_changed)
 
 
@@ -183,12 +198,22 @@ func _set_menu_interactable(interactable: bool) -> void:
 	var mouse_filter: Control.MouseFilter = Control.MOUSE_FILTER_STOP if interactable else Control.MOUSE_FILTER_IGNORE
 	resume_button.mouse_filter = mouse_filter
 	exit_button.mouse_filter = mouse_filter
-	sensitivity_slider.mouse_filter = mouse_filter
+	sensitivity_low_btn.mouse_filter = mouse_filter
+	sensitivity_medium_btn.mouse_filter = mouse_filter
+	sensitivity_high_btn.mouse_filter = mouse_filter
+	profile_high_btn.mouse_filter = mouse_filter
+	profile_low_end_btn.mouse_filter = mouse_filter
+	profile_web_btn.mouse_filter = mouse_filter
 	fov_slider.mouse_filter = mouse_filter
 
 	resume_button.disabled = not interactable
 	exit_button.disabled = not interactable
-	sensitivity_slider.editable = interactable
+	sensitivity_low_btn.disabled = not interactable
+	sensitivity_medium_btn.disabled = not interactable
+	sensitivity_high_btn.disabled = not interactable
+	profile_high_btn.disabled = not interactable
+	profile_low_end_btn.disabled = not interactable
+	profile_web_btn.disabled = not interactable
 	fov_slider.editable = interactable
 	menu_root.focus_mode = Control.FOCUS_ALL if interactable else Control.FOCUS_NONE
 
@@ -263,20 +288,51 @@ func _get_transition_progress_bounds() -> Vector2:
 func _sync_controls_with_player() -> void:
 	_refresh_player_reference()
 	if _player == null:
-		sensitivity_slider.value = 0.004
 		fov_slider.value = 75.0
 	else:
-		sensitivity_slider.value = _player.get_mouse_sensitivity()
+		# Apply our sensitivity (source of truth) to player; read FOV from player
+		_player.set_mouse_sensitivity(_current_sensitivity)
 		fov_slider.value = _player.get_camera_fov()
+	_update_sensitivity_button_states()
+	_update_performance_button_states()
 	_update_setting_labels()
 
 
-func _on_sensitivity_value_changed(value: float) -> void:
+func _on_sensitivity_preset_pressed(value: float) -> void:
+	_current_sensitivity = value
 	_refresh_player_reference()
 	if _player != null:
 		_player.set_mouse_sensitivity(value)
+	_update_sensitivity_button_states()
 	_update_setting_labels()
 	_save_settings()
+
+
+func _update_sensitivity_button_states() -> void:
+	sensitivity_low_btn.set_pressed_no_signal(is_equal_approx(_current_sensitivity, SENSITIVITY_LOW))
+	sensitivity_medium_btn.set_pressed_no_signal(is_equal_approx(_current_sensitivity, SENSITIVITY_MEDIUM))
+	sensitivity_high_btn.set_pressed_no_signal(is_equal_approx(_current_sensitivity, SENSITIVITY_HIGH))
+
+
+func _get_performance_profile() -> PerformanceProfile:
+	return get_node_or_null("/root/GamePerformance") as PerformanceProfile
+
+
+func _on_performance_profile_pressed(profile_name: String) -> void:
+	var profile: PerformanceProfile = _get_performance_profile()
+	if profile != null:
+		profile.set_profile_by_name(profile_name)
+	_update_performance_button_states()
+
+
+func _update_performance_button_states() -> void:
+	var profile: PerformanceProfile = _get_performance_profile()
+	if profile == null:
+		return
+	var current: String = profile.get_profile_name()
+	profile_high_btn.set_pressed_no_signal(current == "high")
+	profile_low_end_btn.set_pressed_no_signal(current == "low_end_pc")
+	profile_web_btn.set_pressed_no_signal(current == "web")
 
 
 func _on_fov_value_changed(value: float) -> void:
@@ -288,7 +344,6 @@ func _on_fov_value_changed(value: float) -> void:
 
 
 func _update_setting_labels() -> void:
-	sensitivity_value_label.text = "%.3f" % sensitivity_slider.value
 	fov_value_label.text = "%d" % int(round(fov_slider.value))
 	if _is_open:
 		_telemetry_update_timer = 0.0
@@ -296,8 +351,8 @@ func _update_setting_labels() -> void:
 
 
 func _update_telemetry_label() -> void:
-	var next_text: String = "MOUSE %.3f | FOV %d | PAUSED %.1fs" % [
-		sensitivity_slider.value,
+	var next_text: String = "MOUSE %.4f | FOV %d | PAUSED %.1fs" % [
+		_current_sensitivity,
 		int(round(fov_slider.value)),
 		_open_elapsed
 	]
@@ -313,19 +368,29 @@ func _load_settings() -> void:
 	if load_result != OK:
 		return
 
-	var sensitivity: float = float(cfg.get_value("player", "mouse_sensitivity", sensitivity_slider.value))
+	var sensitivity: float = float(cfg.get_value("player", "mouse_sensitivity", SENSITIVITY_MEDIUM))
 	var fov: float = float(cfg.get_value("player", "camera_fov", fov_slider.value))
-	sensitivity_slider.value = clampf(sensitivity, sensitivity_slider.min_value, sensitivity_slider.max_value)
+	# Map loaded value to nearest preset (Low, Medium, High)
+	_current_sensitivity = _clamp_to_sensitivity_preset(sensitivity)
 	fov_slider.value = clampf(fov, fov_slider.min_value, fov_slider.max_value)
-	_on_sensitivity_value_changed(sensitivity_slider.value)
+	_on_sensitivity_preset_pressed(_current_sensitivity)
 	_on_fov_value_changed(fov_slider.value)
 
 
 func _save_settings() -> void:
 	var cfg := ConfigFile.new()
-	cfg.set_value("player", "mouse_sensitivity", sensitivity_slider.value)
+	cfg.set_value("player", "mouse_sensitivity", _current_sensitivity)
 	cfg.set_value("player", "camera_fov", fov_slider.value)
 	cfg.save(settings_path)
+
+
+func _clamp_to_sensitivity_preset(value: float) -> float:
+	if value <= (SENSITIVITY_LOW + SENSITIVITY_MEDIUM) / 2.0:
+		return SENSITIVITY_LOW
+	elif value <= (SENSITIVITY_MEDIUM + SENSITIVITY_HIGH) / 2.0:
+		return SENSITIVITY_MEDIUM
+	else:
+		return SENSITIVITY_HIGH
 
 
 func _on_resume_pressed() -> void:

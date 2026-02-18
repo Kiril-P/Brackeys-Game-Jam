@@ -267,25 +267,45 @@ text = "LOOK SENSITIVITY"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="SensitivitySlider" type="HSlider" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/SensitivityRow"]
+[node name="SensitivityLowBtn" type="Button" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/SensitivityRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(360, 0)
+custom_minimum_size = Vector2(100, 36)
 layout_mode = 2
-size_flags_horizontal = 3
-min_value = 0.001
-max_value = 0.02
-step = 0.001
-value = 0.004
-exp_edit = true
+toggle_mode = true
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+text = "Low"
 
-[node name="SensitivityValueLabel" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/SensitivityRow"]
+[node name="SensitivityMediumBtn" type="Button" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/SensitivityRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 0)
+custom_minimum_size = Vector2(100, 36)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.75, 0.98, 1, 1)
-theme_override_font_sizes/font_size = 15
-text = "0.004"
-horizontal_alignment = 2
+toggle_mode = true
+button_pressed = true
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+text = "Medium"
+
+[node name="SensitivityHighBtn" type="Button" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/SensitivityRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+toggle_mode = true
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+text = "High"
 
 [node name="FovHeader" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
 layout_mode = 2
@@ -315,6 +335,55 @@ theme_override_colors/font_color = Color(0.75, 0.98, 1, 1)
 theme_override_font_sizes/font_size = 15
 text = "75"
 horizontal_alignment = 2
+
+[node name="PerformanceHeader" type="Label" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "PERFORMANCE PRESET"
+
+[node name="PerformanceRow" type="HBoxContainer" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ProfileHighBtn" type="Button" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/PerformanceRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+toggle_mode = true
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+text = "High"
+
+[node name="ProfileLowEndBtn" type="Button" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/PerformanceRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+toggle_mode = true
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+text = "Low-end"
+
+[node name="ProfileWebBtn" type="Button" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn/PerformanceRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+toggle_mode = true
+theme_override_colors/font_color = Color(0.67, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+text = "Web"
 
 [node name="ButtonsRow" type="HBoxContainer" parent="MenuRoot/ContentMargin/RootVBox/BodyRow/SettingsColumn"]
 layout_mode = 2

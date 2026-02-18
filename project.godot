@@ -15,23 +15,21 @@ run/main_scene="uid://ixpifoc5g4d1"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+GamePerformance="*res://scripts/performance_profile.gd"
+
 [display]
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/mode=4
 window/size/borderless=true
-window/vsync/vsync_mode=1
-
-[physics]
-
-common/physics_ticks_per_second=60
-common/max_physics_steps_per_frame=5
-
-[autoload]
-
-GamePerformance="*res://scripts/performance_profile.gd"
 
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/portals/plugin.cfg")
+
+[physics]
+
+common/max_physics_steps_per_frame=5
