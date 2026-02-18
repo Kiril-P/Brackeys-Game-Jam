@@ -300,6 +300,8 @@ var start_deactivated: bool = false
 var enable_runtime_lod: bool = true
 var _camera_update_counter: int = 0
 var _last_camera_position: Vector3 = Vector3(999999.0, 999999.0, 999999.0)
+var _last_camera_forward: Vector3 = Vector3.FORWARD
+var _has_last_camera_forward: bool = false
 var _profile_listener_connected: bool = false
 
 #region INTERNALS
@@ -885,6 +887,7 @@ func _connect_profile_listener() -> void:
 	if profile == null or _profile_listener_connected:
 		return
 	profile.profile_changed.connect(_on_performance_profile_changed)
+	profile.portal_runtime_quality_changed.connect(_on_portal_runtime_quality_changed)
 	_profile_listener_connected = true
 
 
@@ -892,15 +895,16 @@ func _on_performance_profile_changed(_profile_name: String) -> void:
 	_apply_profile_settings()
 
 
+func _on_portal_runtime_quality_changed(_scale: float, _update_interval_frames: int) -> void:
+	_apply_profile_settings()
+
+
 func _apply_profile_settings() -> void:
 	var profile: PerformanceProfile = _get_performance_profile()
 	if profile == null:
 		return
-	if profile.get_profile() == PerformanceProfile.Profile.HIGH:
-		viewport_size_mode = PortalViewportSizeMode.FULL
-	else:
-		viewport_size_mode = PortalViewportSizeMode.FRACTIONAL
-		_viewport_size_fractional = profile.portal_fractional_scale()
+	viewport_size_mode = PortalViewportSizeMode.FRACTIONAL
+	_viewport_size_fractional = profile.get_portal_runtime_fractional_scale()
 	if portal_viewport != null:
 		portal_viewport.size = _calculate_viewport_size()
 
@@ -917,6 +921,8 @@ func _should_render_portal_this_frame() -> bool:
 	if profile == null:
 		return true
 
+	_restore_visibility_update_mode_if_idle()
+
 	var distance_to_camera: float = global_position.distance_to(player_camera.global_position)
 	if distance_to_camera > profile.portal_deactivate_distance():
 		portal_viewport.set_update_mode(SubViewport.UPDATE_DISABLED)
@@ -925,13 +931,30 @@ func _should_render_portal_this_frame() -> bool:
 	if portal_viewport.get_update_mode() == SubViewport.UPDATE_DISABLED:
 		portal_viewport.set_update_mode(SubViewport.UPDATE_WHEN_VISIBLE)
 
-	var interval: int = maxi(profile.portal_update_interval_frames(), 1)
+	var interval: int = maxi(profile.get_portal_runtime_update_interval_frames(), 1)
 	var moved_enough: bool = player_camera.global_position.distance_squared_to(_last_camera_position) > 0.04
+	var camera_forward: Vector3 = -player_camera.global_basis.z.normalized()
+	var rotated_enough: bool = not _has_last_camera_forward \
+		or _last_camera_forward.dot(camera_forward) < 0.9996
 	_camera_update_counter = (_camera_update_counter + 1) % interval
-	if moved_enough or _camera_update_counter == 0:
+	if moved_enough or rotated_enough or _camera_update_counter == 0:
 		_last_camera_position = player_camera.global_position
+		_last_camera_forward = camera_forward
+		_has_last_camera_forward = true
 		return true
 	return false
+
+
+func _restore_visibility_update_mode_if_idle() -> void:
+	if portal_viewport == null or exit_portal == null or exit_portal.portal_viewport == null:
+		return
+	if not _watchlist_teleportables.is_empty():
+		return
+	if not exit_portal._watchlist_teleportables.is_empty():
+		return
+	if portal_viewport.get_update_mode() == SubViewport.UPDATE_ALWAYS \
+			or exit_portal.portal_viewport.get_update_mode() == SubViewport.UPDATE_ALWAYS:
+		_set_portal_pair_update_mode(SubViewport.UPDATE_WHEN_VISIBLE)
 
 func _check_tp_interaction(flag: int) -> bool:
 	return (teleport_interactions & flag) > 0
