@@ -53,10 +53,7 @@ func deactivate(destroy_viewports: bool = false) -> void:
 	_watchlist_teleportables.clear()
 	
 	if destroy_viewports:
-		if portal_viewport:
-			portal_viewport.queue_free()
-			portal_viewport = null
-			portal_camera = null
+		_destroy_viewport()
 	
 	process_mode = Node.PROCESS_MODE_DISABLED
 
@@ -298,11 +295,16 @@ var teleport_collision_mask: int = 1 << 15
 ## You have to call [method activate] on it to wake it up! Also see [method disable]
 var start_deactivated: bool = false
 var enable_runtime_lod: bool = true
+var skip_offscreen_updates: bool = true
+var skip_wrong_side_updates: bool = true
+var unload_viewports_when_far: bool = true
+var unload_distance_multiplier: float = 1.35
 var _camera_update_counter: int = 0
 var _last_camera_position: Vector3 = Vector3(999999.0, 999999.0, 999999.0)
 var _last_camera_forward: Vector3 = Vector3.FORWARD
 var _has_last_camera_forward: bool = false
 var _profile_listener_connected: bool = false
+var _screen_notifier: VisibleOnScreenNotifier3D = null
 
 #region INTERNALS
 
@@ -443,6 +445,8 @@ func _on_portal_size_changed() -> void:
 		var box: BoxShape3D = teleport_collider.shape
 		box.size.x = portal_size.x
 		box.size.y = portal_size.y
+	if _screen_notifier != null:
+		_screen_notifier.aabb = _portal_visibility_aabb()
 	
 #endregion
 
@@ -463,9 +467,9 @@ func _ready() -> void:
 	var mat: ShaderMaterial = ShaderMaterial.new()
 	mat.shader = _PORTAL_SHADER
 	portal_mesh.material_override = mat
+	_ensure_screen_notifier()
 	
 	if not start_deactivated:
-		_setup_cameras()
 		get_viewport().size_changed.connect(_on_window_resize)
 	else:
 		deactivate.call_deferred(true)
@@ -487,6 +491,9 @@ func _process(_delta: float) -> void:
 		_process_teleports()
 
 	if not _should_render_portal_this_frame():
+		return
+
+	if not _ensure_viewport_ready():
 		return
 
 	_process_cameras()
@@ -568,6 +575,8 @@ func _process_teleports() -> void:
 			
 			
 			if tp_meta.is_player:
+				_ensure_viewport_ready()
+				exit_portal._ensure_viewport_ready()
 				_process_cameras()
 				exit_portal._process_cameras()
 			
@@ -672,6 +681,36 @@ func _setup_cameras() -> void:
 	else:
 		push_error("%s has no exit_portal! Failed to setup cameras." % name)
 
+func _destroy_viewport() -> void:
+	if portal_viewport:
+		portal_viewport.queue_free()
+	portal_viewport = null
+	portal_camera = null
+
+func _ensure_viewport_ready() -> bool:
+	if portal_viewport != null and portal_camera != null:
+		return true
+	if exit_portal == null:
+		return false
+	_setup_cameras()
+	return portal_viewport != null and portal_camera != null
+
+func _ensure_screen_notifier() -> void:
+	if _screen_notifier != null:
+		_screen_notifier.aabb = _portal_visibility_aabb()
+		return
+	_screen_notifier = VisibleOnScreenNotifier3D.new()
+	_screen_notifier.name = self.name + "_ScreenNotifier"
+	_screen_notifier.aabb = _portal_visibility_aabb()
+	add_child(_screen_notifier, true)
+
+func _portal_visibility_aabb() -> AABB:
+	var margin: float = 0.2
+	return AABB(
+		Vector3(-portal_size.x * 0.5, -portal_size.y * 0.5, -margin),
+		Vector3(portal_size.x, portal_size.y, margin * 2.0)
+	)
+
 #endregion
 
 #region Event handlers
@@ -717,6 +756,8 @@ func _construct_tp_metadata(node: Node3D) -> void:
 	## Ensuring both portals are updated regardless of visibility while in the portals prevents flickering.
 	## More info: https://github.com/VojtaStruhar/godot-portals-plugin/pull/4
 	if meta.is_player:
+		_ensure_viewport_ready()
+		exit_portal._ensure_viewport_ready()
 		_set_portal_pair_update_mode(SubViewport.UPDATE_ALWAYS)
 	
 	if _check_tp_interaction(TeleportInteractions.DUPLICATE_MESHES)\
@@ -764,7 +805,8 @@ func _transfer_tp_metadata_to_exit(for_body: Node3D) -> void:
 		# Not a portal pair - the transition isn't seamless anyways. Flip the update 
 		# mode of this portal "manually" and enable the next portal pair, since `_construct_tp_metadata`
 		# will not get called there. Usually portals are symmetric, though.
-		portal_viewport.set_update_mode(SubViewport.UPDATE_WHEN_VISIBLE)
+		if portal_viewport:
+			portal_viewport.set_update_mode(SubViewport.UPDATE_WHEN_VISIBLE)
 		exit_portal._set_portal_pair_update_mode(SubViewport.UPDATE_ALWAYS)
 	
 	# NOTE: Not using '_erase_tp_metadata' here, as it also frees the cloned meshes!
@@ -911,22 +953,29 @@ func _apply_profile_settings() -> void:
 
 func _should_render_portal_this_frame() -> bool:
 	if not enable_runtime_lod:
-		return true
+		return _ensure_viewport_ready()
 	if player_camera == null:
-		return true
-	if portal_viewport == null:
-		return true
+		return _ensure_viewport_ready()
+	if _camera_is_on_hidden_side():
+		_disable_viewport_updates()
+		return false
+	if skip_offscreen_updates and _screen_notifier != null and not _screen_notifier.is_on_screen():
+		_disable_viewport_updates()
+		return false
 
 	var profile: PerformanceProfile = _get_performance_profile()
 	if profile == null:
-		return true
-
-	_restore_visibility_update_mode_if_idle()
+		return _ensure_viewport_ready()
 
 	var distance_to_camera: float = global_position.distance_to(player_camera.global_position)
 	if distance_to_camera > profile.portal_deactivate_distance():
-		portal_viewport.set_update_mode(SubViewport.UPDATE_DISABLED)
+		_disable_viewport_updates()
+		_try_unload_viewport(distance_to_camera, profile.portal_deactivate_distance())
 		return false
+
+	if not _ensure_viewport_ready():
+		return false
+	_restore_visibility_update_mode_if_idle()
 
 	if portal_viewport.get_update_mode() == SubViewport.UPDATE_DISABLED:
 		portal_viewport.set_update_mode(SubViewport.UPDATE_WHEN_VISIBLE)
@@ -943,6 +992,34 @@ func _should_render_portal_this_frame() -> bool:
 		_has_last_camera_forward = true
 		return true
 	return false
+
+func _camera_is_on_hidden_side() -> bool:
+	if not skip_wrong_side_updates or player_camera == null:
+		return false
+	var in_front: bool = forward_distance(player_camera) > 0.0
+	match view_direction:
+		ViewDirection.ONLY_FRONT:
+			return not in_front
+		ViewDirection.ONLY_BACK:
+			return in_front
+	return false
+
+func _disable_viewport_updates() -> void:
+	if portal_viewport != null:
+		portal_viewport.set_update_mode(SubViewport.UPDATE_DISABLED)
+
+func _try_unload_viewport(distance_to_camera: float, deactivate_distance: float) -> void:
+	if not unload_viewports_when_far:
+		return
+	if portal_viewport == null:
+		return
+	if distance_to_camera <= deactivate_distance * unload_distance_multiplier:
+		return
+	if not _watchlist_teleportables.is_empty():
+		return
+	if exit_portal != null and not exit_portal._watchlist_teleportables.is_empty():
+		return
+	_destroy_viewport()
 
 
 func _restore_visibility_update_mode_if_idle() -> void:
@@ -961,7 +1038,12 @@ func _check_tp_interaction(flag: int) -> bool:
 
 func _set_portal_pair_update_mode(mode: SubViewport.UpdateMode) -> void:
 	assert(is_instance_valid(exit_portal))
-	self.portal_viewport.set_update_mode(mode)
+	if portal_viewport == null:
+		_ensure_viewport_ready()
+	if exit_portal.portal_viewport == null:
+		exit_portal._ensure_viewport_ready()
+	if self.portal_viewport:
+		self.portal_viewport.set_update_mode(mode)
 	if exit_portal.portal_viewport:
 		exit_portal.portal_viewport.set_update_mode(mode)
 

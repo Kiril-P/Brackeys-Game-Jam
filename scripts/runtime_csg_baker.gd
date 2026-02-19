@@ -3,12 +3,28 @@ extends Node
 class_name RuntimeCSGBaker
 
 @export var target_root_path: NodePath = NodePath("..")
+@export var force_bake_csg_count_threshold: int = 40
+
+var _pending_candidates: Array[CSGShape3D] = []
 
 
 func _ready() -> void:
-	var profile: PerformanceProfile = get_node_or_null("/root/GamePerformance") as PerformanceProfile
-	if profile == null or not profile.should_bake_csg_runtime():
+	var target_root: Node = get_node_or_null(target_root_path)
+	if target_root == null:
 		return
+
+	var candidates: Array[CSGShape3D] = _collect_bake_candidates(target_root)
+	if candidates.is_empty():
+		return
+
+	var profile: PerformanceProfile = get_node_or_null("/root/GamePerformance") as PerformanceProfile
+	var should_bake: bool = profile != null and profile.should_bake_csg_runtime()
+	if not should_bake and force_bake_csg_count_threshold > 0:
+		should_bake = candidates.size() >= force_bake_csg_count_threshold
+	if not should_bake:
+		return
+
+	_pending_candidates = candidates
 	call_deferred("_bake_runtime_meshes")
 
 
@@ -21,7 +37,12 @@ func _bake_runtime_meshes() -> void:
 	baked_container.name = "BakedCSG"
 	target_root.add_child(baked_container)
 
-	for csg: CSGShape3D in _collect_bake_candidates(target_root):
+	var candidates: Array[CSGShape3D] = _pending_candidates
+	if candidates.is_empty():
+		candidates = _collect_bake_candidates(target_root)
+	_pending_candidates = []
+
+	for csg: CSGShape3D in candidates:
 		var mesh_data: Array = csg.get_meshes()
 		if mesh_data.size() < 2:
 			continue
@@ -46,26 +67,20 @@ func _bake_runtime_meshes() -> void:
 
 func _collect_bake_candidates(target_root: Node) -> Array[CSGShape3D]:
 	var candidates: Array[CSGShape3D] = []
-	_collect_recursive(target_root, candidates)
+	_collect_recursive(target_root, target_root, candidates)
 	return candidates
 
 
-func _collect_recursive(node: Node, out: Array[CSGShape3D]) -> void:
+func _collect_recursive(node: Node, target_root: Node, out: Array[CSGShape3D]) -> void:
+	if node != target_root and node.get_node_or_null("RuntimeCSGBaker") != null:
+		return
+
 	if node is CSGShape3D:
 		var csg := node as CSGShape3D
 		if csg.get_parent() is CSGShape3D:
-			return
-		if _has_csg_children(csg):
 			return
 		out.append(csg)
 		return
 
 	for child: Node in node.get_children():
-		_collect_recursive(child, out)
-
-
-func _has_csg_children(node: Node) -> bool:
-	for child: Node in node.get_children():
-		if child is CSGShape3D:
-			return true
-	return false
+		_collect_recursive(child, target_root, out)

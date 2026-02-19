@@ -15,13 +15,13 @@ const SETTINGS_PATH: String = "user://settings.cfg"
 const SETTINGS_SECTION: String = "performance"
 const SETTINGS_KEY_PROFILE: String = "profile"
 const ADAPTIVE_TARGET_FPS: float = 60.0
-const ADAPTIVE_DEGRADE_FPS: float = 56.0
+const ADAPTIVE_DEGRADE_FPS: float = 58.0
 const ADAPTIVE_RECOVER_FPS: float = 60.0
 const ADAPTIVE_EVAL_INTERVAL_SEC: float = 0.6
-const ADAPTIVE_MIN_PORTAL_SCALE: float = 0.55
-const ADAPTIVE_MAX_PORTAL_SCALE: float = 0.78
+const ADAPTIVE_MIN_PORTAL_SCALE: float = 0.4
+const ADAPTIVE_MAX_PORTAL_SCALE: float = 0.72
 const ADAPTIVE_MIN_UPDATE_INTERVAL: int = 2
-const ADAPTIVE_MAX_UPDATE_INTERVAL: int = 4
+const ADAPTIVE_MAX_UPDATE_INTERVAL: int = 6
 
 var _profile: Profile = Profile.HIGH
 var _runtime_portal_fractional_scale: float = ADAPTIVE_MAX_PORTAL_SCALE
@@ -121,12 +121,12 @@ func portal_update_interval_frames() -> int:
 func portal_deactivate_distance() -> float:
 	match _profile:
 		Profile.HIGH:
-			return 110.0
+			return 85.0
 		Profile.LOW_END_PC:
-			return 90.0
+			return 80.0
 		Profile.WEB:
 			return 65.0
-	return 120.0
+	return 90.0
 
 
 func get_portal_runtime_fractional_scale():
