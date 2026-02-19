@@ -17,3 +17,6 @@ export_presets.cfg
 # OS
 .DS_Store
 Thumbs.db
+
+# Godot temp scenes
+*.tscn*.tmp

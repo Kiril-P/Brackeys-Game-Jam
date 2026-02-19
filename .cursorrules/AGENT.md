@@ -21,12 +21,9 @@ A companion guide character travels with the player, helps teach mechanics, and 
 - Voice lines should be funny but still useful for player clarity and pacing.
 
 ## Gravity Rules (Important Change)
-- Remove direct player-controlled gravity switching as the main interaction.
-- The companion always tries to stand on the nearest valid wall/surface.
-- When the companion attaches to a new surface, gravity updates for both:
-  - companion gravity aligns to that surface normal
-  - player gravity also aligns to that same surface
-- This shared gravity shift is the core moment-to-moment gameplay loop.
+- Player-controlled gravity switching is the active core interaction.
+- The companion follows and adapts to the player's current gravity orientation.
+- Companion-driven shared gravity switching is not an active gameplay requirement right now.
 
 ## Progression Structure
 - The player starts from a central cube hub with four enterable sides.
@@ -52,7 +49,7 @@ A companion guide character travels with the player, helps teach mechanics, and 
 ## Technical Notes for Agents
 - Portals: continue leveraging SubViewport-based portal rendering and stencil/masking workflows.
 - Physics controller: `CharacterBody3D` with `move_and_slide()` and manually managed gravity vectors.
-- Camera orientation should remain stable during shared gravity realignments.
+- Camera orientation should remain stable during player-driven gravity realignments.
 - Optimize expensive visuals/portals when off-screen to preserve frame rate.
 
 ## Design Guardrails

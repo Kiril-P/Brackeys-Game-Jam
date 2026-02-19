@@ -62,6 +62,7 @@ func _bake_runtime_meshes() -> void:
 			mesh_instance.cast_shadow = csg.cast_shadow
 			baked_container.add_child(mesh_instance)
 
+		_reparent_non_csg_children(csg)
 		csg.visible = false
 
 
@@ -84,3 +85,22 @@ func _collect_recursive(node: Node, target_root: Node, out: Array[CSGShape3D]) -
 
 	for child: Node in node.get_children():
 		_collect_recursive(child, target_root, out)
+
+
+func _reparent_non_csg_children(csg: CSGShape3D) -> void:
+	var parent: Node = csg.get_parent()
+	if parent == null:
+		return
+	var runtime_children: Array[Node] = _collect_runtime_children_to_preserve(csg)
+	for child: Node in runtime_children:
+		if is_instance_valid(child):
+			child.reparent(parent, true)
+
+
+func _collect_runtime_children_to_preserve(csg: CSGShape3D) -> Array[Node]:
+	var runtime_children: Array[Node] = []
+	for child: Node in csg.get_children():
+		if child is CSGShape3D:
+			continue
+		runtime_children.append(child)
+	return runtime_children

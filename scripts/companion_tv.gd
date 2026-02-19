@@ -52,6 +52,11 @@ extends Node3D
 @export_range(0.5, 30.0, 0.1) var interaction_max_reach: float = 6.0
 @export_flags_3d_physics var click_raycast_mask: int = 2
 
+@export_group("Optimization")
+@export_range(1, 128, 1) var route_score_budget_per_tick: int = 18
+@export_range(1, 60, 1) var query_cache_ttl_frames: int = 4
+@export_range(0.05, 2.0, 0.05) var query_cache_quantization: float = 0.2
+
 @onready var visual_root: Node3D = %VisualRoot
 @onready var propeller_pivot: Node3D = %PropellerPivot
 @onready var side_propeller_pivot_l: Node3D = %SidePropellerPivotL
@@ -97,6 +102,13 @@ var _ray_query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.new()
 var _shape_query: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
 var _detour_candidate_buffer: Array[Vector3] = []
 var _teleport_candidate_buffer: Array[Vector3] = []
+var _point_blocked_cache: Dictionary = {}
+var _segment_hits_cache: Dictionary = {}
+var _lane_clear_cache: Dictionary = {}
+var _physics_frame_counter: int = 0
+var _resolve_candidate_cursor: int = 0
+var _detour_candidate_cursor: int = 0
+var _last_click_reaction_frame: int = -1
 
 
 func _ready() -> void:
@@ -130,6 +142,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
+		return
 	if not (event is InputEventMouseButton):
 		return
 	var button_event := event as InputEventMouseButton
@@ -139,6 +153,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_physics_frame_counter += 1
 	_time += delta
 	if _player == null or not is_instance_valid(_player):
 		_player_refind_timer -= delta
@@ -238,13 +253,14 @@ func _resolve_target_with_avoidance(raw_target: Vector3, desired_target: Vector3
 		return raw_target
 
 	var fallback: Vector3 = raw_target
+	var candidates: Array[Vector3] = _build_detour_candidates(desired_target, _detour_fail_count)
 	var best_target: Vector3 = raw_target
 	var best_score: float = INF
-	for candidate: Vector3 in _build_detour_candidates(desired_target, _detour_fail_count):
-		var score: float = _score_route_candidate(candidate, desired_target)
-		if score < best_score:
-			best_score = score
-			best_target = candidate
+	var eval_result: Array = _score_candidates_with_budget(candidates, desired_target, _resolve_candidate_cursor)
+	if eval_result.size() == 3:
+		best_score = eval_result[0]
+		best_target = eval_result[1]
+		_resolve_candidate_cursor = eval_result[2]
 
 	if best_score >= INF * 0.5:
 		return fallback
@@ -341,30 +357,47 @@ func _try_recovery_teleport() -> bool:
 
 		global_position = candidate
 		_velocity = Vector3.ZERO
+		_clear_query_caches()
 		return true
 
 	return false
 
 
 func _segment_hits_obstacle(from: Vector3, to: Vector3) -> bool:
+	var cache_key: String = _segment_cache_key(from, to)
+	var cached: Variant = _cache_get(_segment_hits_cache, cache_key)
+	if cached != null:
+		return bool(cached)
 	_ray_query.from = from
 	_ray_query.to = to
-	return not get_world_3d().direct_space_state.intersect_ray(_ray_query).is_empty()
+	var hits_obstacle: bool = not get_world_3d().direct_space_state.intersect_ray(_ray_query).is_empty()
+	_cache_set(_segment_hits_cache, cache_key, hits_obstacle)
+	return hits_obstacle
 
 
 func _is_lane_clear(from: Vector3, to: Vector3) -> bool:
+	var cache_key: String = _lane_cache_key(from, to, _frame_player_up)
+	var cached: Variant = _cache_get(_lane_clear_cache, cache_key)
+	if cached != null:
+		return bool(cached)
+
 	var up: Vector3 = _frame_player_up
 	var direction: Vector3 = (to - from).normalized()
 	if direction.length_squared() < 0.0001:
+		_cache_set(_lane_clear_cache, cache_key, true)
 		return true
 	var right: Vector3 = direction.cross(up).normalized()
 	var lane_side_offset: Vector3 = right * obstacle_probe_radius * 0.8
 	if _segment_hits_obstacle(from, to):
+		_cache_set(_lane_clear_cache, cache_key, false)
 		return false
 	if _segment_hits_obstacle(from + lane_side_offset, to + lane_side_offset):
+		_cache_set(_lane_clear_cache, cache_key, false)
 		return false
 	if _segment_hits_obstacle(from - lane_side_offset, to - lane_side_offset):
+		_cache_set(_lane_clear_cache, cache_key, false)
 		return false
+	_cache_set(_lane_clear_cache, cache_key, true)
 	return true
 
 
@@ -372,8 +405,15 @@ func _is_point_blocked(point: Vector3) -> bool:
 	if _probe_shape == null:
 		return false
 
+	var cache_key: String = _point_cache_key(point)
+	var cached: Variant = _cache_get(_point_blocked_cache, cache_key)
+	if cached != null:
+		return bool(cached)
+
 	_shape_query.transform = Transform3D(Basis.IDENTITY, point)
-	return not get_world_3d().direct_space_state.intersect_shape(_shape_query, 4).is_empty()
+	var blocked: bool = not get_world_3d().direct_space_state.intersect_shape(_shape_query, 4).is_empty()
+	_cache_set(_point_blocked_cache, cache_key, blocked)
+	return blocked
 
 
 func _compute_lane_steer(target: Vector3, up: Vector3) -> Vector3:
@@ -520,6 +560,8 @@ func _update_face_expression(delta: float, excitement: float) -> void:
 
 
 func _on_hit_area_input_event(_camera: Camera3D, event: InputEvent, event_position: Vector3, _normal: Vector3, _shape_idx: int) -> void:
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		return
 	if not (event is InputEventMouseButton):
 		return
 	var button_event := event as InputEventMouseButton
@@ -573,13 +615,14 @@ func _update_detour_state(desired_target: Vector3, delta: float) -> Vector3:
 
 func _pick_detour_target(desired_target: Vector3, escalate: bool) -> bool:
 	var expansion: int = _detour_fail_count + (1 if escalate else 0)
+	var candidates: Array[Vector3] = _build_detour_candidates(desired_target, expansion)
 	var best_target: Vector3 = Vector3.ZERO
 	var best_score: float = INF
-	for candidate: Vector3 in _build_detour_candidates(desired_target, expansion):
-		var score: float = _score_route_candidate(candidate, desired_target)
-		if score < best_score:
-			best_score = score
-			best_target = candidate
+	var eval_result: Array = _score_candidates_with_budget(candidates, desired_target, _detour_candidate_cursor)
+	if eval_result.size() == 3:
+		best_score = eval_result[0]
+		best_target = eval_result[1]
+		_detour_candidate_cursor = eval_result[2]
 
 	if best_score >= INF * 0.5:
 		return false
@@ -649,6 +692,70 @@ func _score_route_candidate(candidate: Vector3, desired_target: Vector3) -> floa
 	return score
 
 
+func _score_candidates_with_budget(candidates: Array[Vector3], desired_target: Vector3, start_cursor: int) -> Array:
+	var count: int = candidates.size()
+	if count == 0:
+		return [INF, Vector3.ZERO, 0]
+
+	var budget: int = mini(maxi(route_score_budget_per_tick, 1), count)
+	var cursor: int = posmod(start_cursor, count)
+	var best_score: float = INF
+	var best_target: Vector3 = Vector3.ZERO
+	for i: int in budget:
+		var index: int = (cursor + i) % count
+		var candidate: Vector3 = candidates[index]
+		var score: float = _score_route_candidate(candidate, desired_target)
+		if score < best_score:
+			best_score = score
+			best_target = candidate
+	var next_cursor: int = (cursor + budget) % count
+	return [best_score, best_target, next_cursor]
+
+
+func _clear_query_caches() -> void:
+	_point_blocked_cache.clear()
+	_segment_hits_cache.clear()
+	_lane_clear_cache.clear()
+	_resolve_candidate_cursor = 0
+	_detour_candidate_cursor = 0
+
+
+func _cache_get(cache: Dictionary, key: String) -> Variant:
+	var entry: Dictionary = cache.get(key, {})
+	if entry.is_empty():
+		return null
+	var frame: int = int(entry.get("frame", -999999))
+	if _physics_frame_counter - frame > query_cache_ttl_frames:
+		cache.erase(key)
+		return null
+	return entry.get("value")
+
+
+func _cache_set(cache: Dictionary, key: String, value: bool) -> void:
+	cache.set(key, {"frame": _physics_frame_counter, "value": value})
+
+
+func _point_cache_key(point: Vector3) -> String:
+	return _vector_cache_key(point)
+
+
+func _segment_cache_key(from: Vector3, to: Vector3) -> String:
+	return "%s|%s" % [_vector_cache_key(from), _vector_cache_key(to)]
+
+
+func _lane_cache_key(from: Vector3, to: Vector3, up: Vector3) -> String:
+	return "%s|%s|%s" % [_vector_cache_key(from), _vector_cache_key(to), _vector_cache_key(up)]
+
+
+func _vector_cache_key(v: Vector3) -> String:
+	var quant: float = maxf(query_cache_quantization, 0.001)
+	var scale: float = 1.0 / quant
+	var ix: int = int(round(v.x * scale))
+	var iy: int = int(round(v.y * scale))
+	var iz: int = int(round(v.z * scale))
+	return "%d,%d,%d" % [ix, iy, iz]
+
+
 func _clear_detour_state() -> void:
 	_has_detour = false
 	_detour_target = Vector3.ZERO
@@ -694,6 +801,11 @@ func _try_click_reaction(mouse_position: Vector2) -> void:
 
 
 func _trigger_click_reaction(hit_position: Vector3) -> void:
+	var frame_id: int = Engine.get_process_frames()
+	if _last_click_reaction_frame == frame_id:
+		return
+	_last_click_reaction_frame = frame_id
+
 	var away: Vector3
 	if _player != null:
 		away = (global_position - _player.global_position).normalized()
@@ -717,3 +829,4 @@ func _refresh_query_excludes() -> void:
 		excludes.append((_player as CollisionObject3D).get_rid())
 	_ray_query.exclude = excludes
 	_shape_query.exclude = excludes
+	_clear_query_caches()
