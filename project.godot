@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+GameProgress="*res://scripts/game_progress.gd"
 GamePerformance="*res://scripts/performance_profile.gd"
 
 [display]

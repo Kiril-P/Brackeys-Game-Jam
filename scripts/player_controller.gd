@@ -24,6 +24,11 @@ class_name PlayerController
 @export_range(0.05, 1.5, 0.01) var max_step_down: float = 0.5
 @export_range(0.001, 0.1, 0.001) var stair_test_margin: float = 0.001
 
+@export_group("Safety")
+@export_range(2.0, 120.0, 0.5) var oob_fall_distance: float = 30.0
+@export_range(0.1, 5.0, 0.05) var oob_timeout: float = 0.8
+@export_range(0.1, 5.0, 0.05) var safe_anchor_update_interval: float = 0.4
+
 @onready var head: Node3D = %Head
 @onready var camera: Camera3D = %Camera3D
 @onready var gravity_raycast: RayCast3D = %GravityRayCast3D
@@ -33,6 +38,13 @@ var _max_pitch_radians: float
 var _gravity_tween: Tween
 var _is_rotating_gravity: bool = false
 var _awaiting_pointer_lock_click: bool = false
+var _last_safe_transform: Transform3D
+var _last_safe_up: Vector3 = Vector3.UP
+var _safe_anchor_timer: float = 0.0
+var _oob_timer: float = 0.0
+var _post_teleport_grace_timer: float = 0.0
+
+const POST_TELEPORT_SAFE_GRACE: float = 0.35
 
 func _ready() -> void:
 	add_to_group("player")
@@ -46,6 +58,11 @@ func _ready() -> void:
 	_max_pitch_radians = deg_to_rad(max_pitch_degrees)
 	up_direction = Vector3.UP
 	_target_up = up_direction
+	_last_safe_transform = global_transform
+	_last_safe_up = up_direction
+	_safe_anchor_timer = safe_anchor_update_interval
+	_oob_timer = 0.0
+	_post_teleport_grace_timer = 0.0
 	_apply_active_color_for_up(up_direction)
 
 
@@ -80,6 +97,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	if not stepped_up:
 		_try_step_down(was_on_floor)
+	_update_safe_anchor_and_oob(delta)
 
 
 func _handle_gravity_input() -> void:
@@ -222,6 +240,48 @@ func _try_step_down(was_on_floor: bool) -> void:
 		velocity -= up_direction * vertical_speed
 
 
+func _update_safe_anchor_and_oob(delta: float) -> void:
+	_post_teleport_grace_timer = maxf(_post_teleport_grace_timer - delta, 0.0)
+
+	var can_capture_anchor: bool = is_on_floor() and not _is_rotating_gravity and _post_teleport_grace_timer <= 0.0
+	if can_capture_anchor:
+		_safe_anchor_timer -= delta
+		if _safe_anchor_timer <= 0.0:
+			_last_safe_transform = global_transform
+			_last_safe_up = up_direction.normalized() if not up_direction.is_zero_approx() else Vector3.UP
+			_safe_anchor_timer = safe_anchor_update_interval
+	else:
+		_safe_anchor_timer = minf(_safe_anchor_timer, safe_anchor_update_interval)
+
+	var anchor_up: Vector3 = _last_safe_up if not _last_safe_up.is_zero_approx() else Vector3.UP
+	var fall_distance: float = (_last_safe_transform.origin - global_transform.origin).dot(anchor_up)
+	if fall_distance > oob_fall_distance:
+		_oob_timer += delta
+	else:
+		_oob_timer = maxf(_oob_timer - delta * 2.0, 0.0)
+
+	if _oob_timer >= oob_timeout:
+		_recover_from_out_of_bounds()
+
+
+func _recover_from_out_of_bounds() -> void:
+	if _gravity_tween != null:
+		_gravity_tween.kill()
+		_gravity_tween = null
+	_is_rotating_gravity = false
+	_oob_timer = 0.0
+	_post_teleport_grace_timer = POST_TELEPORT_SAFE_GRACE
+
+	_target_up = _last_safe_up if not _last_safe_up.is_zero_approx() else Vector3.UP
+	_target_up = _target_up.normalized()
+	up_direction = _target_up
+	global_transform = _last_safe_transform
+	velocity = Vector3.ZERO
+	_snap_basis_to_up(_target_up)
+	head.rotation = Vector3(clampf(head.rotation.x, -_max_pitch_radians, _max_pitch_radians), 0.0, 0.0)
+	apply_floor_snap()
+
+
 func _body_test_motion(from_transform: Transform3D, motion: Vector3, result: PhysicsTestMotionResult3D = null) -> bool:
 	var params := PhysicsTestMotionParameters3D.new()
 	params.from = from_transform
@@ -302,6 +362,7 @@ func on_teleport(portal: Portal3D) -> void:
 		_target_up = up_direction if not up_direction.is_zero_approx() else Vector3.UP
 	_target_up = _target_up.normalized()
 	up_direction = _target_up
+	_post_teleport_grace_timer = POST_TELEPORT_SAFE_GRACE
 
 	if _needs_post_teleport_snap(_target_up):
 		_snap_basis_to_up(_target_up)

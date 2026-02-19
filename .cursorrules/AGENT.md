@@ -26,12 +26,26 @@ A companion guide character travels with the player, helps teach mechanics, and 
 - Companion-driven shared gravity switching is not an active gameplay requirement right now.
 
 ## Progression Structure
-- The player starts from a central cube hub with four enterable sides.
-- Each side acts as a portal to a different puzzle room/level.
-- Looking through a cube side should show an unstable object associated with that room.
-- Entering that side transports the player to the room containing that object.
-- The room is locked until the local puzzle is solved and the object is stabilized.
-- After stabilization, exit/unlock flow returns the player to hub progression.
+- Player spawns in `GravityPlayground`, which is the onboarding hub.
+- The cube in `GravityPlayground` is the level selector.
+- Level 1 starts unlocked.
+- Additional cube sides unlock sequentially as levels are completed.
+- Locked sides remain visible but non-teleport until unlocked.
+
+## Current Playable Content
+- Level 1 is implemented and includes:
+  - Infinite staircase illusion where backward traversal is required to progress.
+  - Infinite doorway sequence with one correct route.
+- Level 2 unlocks after Level 1 completion (currently early/placeholder content).
+- Levels 3 and 4 remain locked for now.
+- Level 5 is currently unused.
+
+## Near-Term Gameplay Priorities
+- Finish Level 1 overhaul tuning (stairs telegraph readability, dense-route state clarity, final seal readability).
+- Validate the full Level 1 completion chain (seal success -> return gate -> hub return commit -> Level 2 unlock persistence).
+- Keep companion guidance subtitle-first and voice-ready; add `.wav` assets incrementally without blocking gameplay flow.
+- Run focused fairness playtests so each hint tier resolves confusion without removing discovery.
+- Begin Level 2 planning/implementation only after Level 1 onboarding quality is stable.
 
 ## Puzzle and Space Design
 - Use portal mechanics for spatial paradoxes, misdirection, and layered puzzle logic.

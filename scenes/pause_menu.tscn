@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=3 uid="uid://dnhl7uybr14ae"]
 
 [ext_resource type="Script" uid="uid://gbluru6d1n7q" path="res://scripts/pause_menu.gd" id="1_pause_script"]
-[ext_resource type="Shader" uid="uid://b2etkdhbn0mny" path="res://transition.gdshader" id="2_transition_shader"]
+[ext_resource type="Shader" path="res://transition.gdshader" id="2_transition_shader"]
 [ext_resource type="Shader" path="res://pause_non_euclid.gdshader" id="3_non_euclid_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_transition"]

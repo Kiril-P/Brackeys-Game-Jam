@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=4 uid="uid://ixpifoc5g4d1"]
+[gd_scene load_steps=42 format=4 uid="uid://ixpifoc5g4d1"]
 
 [ext_resource type="Script" uid="uid://4o88o544qfn2" path="res://sobel_overlay_setup.gd" id="1_nnsk1"]
 [ext_resource type="Script" uid="uid://bdyttlbw2ki72" path="res://scripts/runtime_csg_baker.gd" id="1_v0r2p"]
@@ -12,6 +12,8 @@
 [ext_resource type="Material" path="res://materials/euclid_orchard_sky.tres" id="10_bk7ad"]
 [ext_resource type="PackedScene" uid="uid://bak8ltrhbmlv5" path="res://scenes/CSGStairMaker3D.tscn" id="10_e3hyu"]
 [ext_resource type="PackedScene" uid="uid://cdosweh6kg2y0" path="res://scenes/companion_tv.tscn" id="10_w7kh3"]
+[ext_resource type="Script" uid="uid://d0eos43g4s4i5" path="res://scripts/world_gameplay_flow.gd" id="11_xa1m6"]
+[ext_resource type="Script" uid="uid://dpa4pv3s4yio4" path="res://scripts/level_1_flow.gd" id="12_t6m48"]
 
 [sub_resource type="Sky" id="Sky_rwgxs"]
 sky_material = ExtResource("10_bk7ad")
@@ -20,6 +22,40 @@ sky_material = ExtResource("10_bk7ad")
 background_mode = 2
 sky = SubResource("Sky_rwgxs")
 tonemap_mode = 2
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l1_stairs_loop"]
+size = Vector3(6, 4, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l1_reverse"]
+size = Vector3(8, 4, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l1_gate"]
+size = Vector3(8, 5, 1.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7r4gi"]
+albedo_color = Color(0.9411765, 0, 0, 1)
+roughness = 0.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_l1_gate"]
+size = Vector3(8, 5, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l1_choice"]
+size = Vector3(3, 3, 3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q5onr"]
+albedo_color = Color(0, 0.36743286, 0.6574027, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_l1_indicator"]
+size = Vector3(0.9, 0.9, 0.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jhx03"]
+albedo_color = Color(0, 0.51982534, 0.13592273, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o8fc1"]
+albedo_color = Color(1, 0.11764706, 0.05490196, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l1_final"]
+size = Vector3(5, 4, 5)
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_e3hyu"]
 _surfaces = [{
@@ -57,15 +93,6 @@ size = Vector3(3.5, 4.5, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_o8fc1"]
 size = Vector3(3.5, 4.5, 1)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q5onr"]
-albedo_color = Color(0, 0.36743286, 0.6574027, 1)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jhx03"]
-albedo_color = Color(0, 0.51982534, 0.13592273, 1)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o8fc1"]
-albedo_color = Color(1, 0.11764706, 0.05490196, 1)
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xo05s"]
 albedo_color = Color(1, 0.98039216, 0, 1)
 
@@ -91,9 +118,8 @@ size = Vector3(8, 8, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_jhx03"]
 size = Vector3(8, 8, 1)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7r4gi"]
-albedo_color = Color(0.9411765, 0, 0, 1)
-roughness = 0.0
+[sub_resource type="BoxShape3D" id="BoxShape3D_level1_complete"]
+size = Vector3(6, 4, 6)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e3hyu"]
 albedo_color = Color(0, 1, 0.14901961, 1)
@@ -103,6 +129,17 @@ roughness = 0.0
 albedo_color = Color(1, 0.19157687, 0.73794657, 1)
 roughness = 0.0
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_lock_blocker"]
+size = Vector3(2.9, 2.9, 0.16)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lock_blocker"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.1, 0.1, 0.38)
+
+[sub_resource type="BoxMesh" id="BoxMesh_lock_blocker"]
+size = Vector3(2.9, 2.9, 0.16)
+
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_nnsk1")
 line_color = Color(0, 0, 0, 1)
@@ -110,6 +147,9 @@ line_thickness = 1.5
 
 [node name="RuntimeCSGBaker" type="Node" parent="."]
 script = ExtResource("1_v0r2p")
+
+[node name="WorldGameplayFlow" type="Node" parent="."]
+script = ExtResource("11_xa1m6")
 
 [node name="PauseMenu" parent="." instance=ExtResource("5_21j73")]
 
@@ -129,8 +169,103 @@ max_step_down = 0.99
 
 [node name="HUD" parent="." instance=ExtResource("5_71j4m")]
 
+[node name="LockVisuals" type="Node3D" parent="."]
+
+[node name="Level1" type="Node3D" parent="LockVisuals"]
+visible = false
+
+[node name="Level2" type="Node3D" parent="LockVisuals"]
+visible = false
+
+[node name="Level3" type="Node3D" parent="LockVisuals"]
+visible = false
+
+[node name="Level4" type="Node3D" parent="LockVisuals"]
+visible = false
+
 [node name="Level 1" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3644452, 0)
+
+[node name="Level1Flow" type="Node" parent="Level 1"]
+script = ExtResource("12_t6m48")
+
+[node name="StairsLoopTrigger" type="Area3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -74.6524, 4, 123.76382)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/StairsLoopTrigger"]
+shape = SubResource("BoxShape3D_l1_stairs_loop")
+
+[node name="ReverseRevealTrigger" type="Area3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -70.6524, 4, 109.76382)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/ReverseRevealTrigger"]
+shape = SubResource("BoxShape3D_l1_reverse")
+
+[node name="DenseGate" type="StaticBody3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -70.6524, 4, 103.76382)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/DenseGate"]
+shape = SubResource("BoxShape3D_l1_gate")
+
+[node name="GateMesh" type="MeshInstance3D" parent="Level 1/DenseGate"]
+material_override = SubResource("StandardMaterial3D_7r4gi")
+mesh = SubResource("BoxMesh_l1_gate")
+
+[node name="DenseChoiceTriggerA" type="Area3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -82, 2.5, 79.764)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/DenseChoiceTriggerA"]
+shape = SubResource("BoxShape3D_l1_choice")
+
+[node name="DenseChoiceTriggerB" type="Area3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -86, 2.5, 84.764)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/DenseChoiceTriggerB"]
+shape = SubResource("BoxShape3D_l1_choice")
+
+[node name="DenseChoiceTriggerC" type="Area3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -86, 2.5, 74.764)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/DenseChoiceTriggerC"]
+shape = SubResource("BoxShape3D_l1_choice")
+
+[node name="DenseStateIndicator" type="Node3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -79, 7, 71)
+
+[node name="State0" type="MeshInstance3D" parent="Level 1/DenseStateIndicator"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 0, 0)
+material_override = SubResource("StandardMaterial3D_q5onr")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_l1_indicator")
+
+[node name="State1" type="MeshInstance3D" parent="Level 1/DenseStateIndicator"]
+visible = false
+material_override = SubResource("StandardMaterial3D_jhx03")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_l1_indicator")
+
+[node name="State2" type="MeshInstance3D" parent="Level 1/DenseStateIndicator"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 0, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_o8fc1")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_l1_indicator")
+
+[node name="FinalOrientationSealTrigger" type="Area3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -58.5, 4.0336647, 82)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/FinalOrientationSealTrigger"]
+shape = SubResource("BoxShape3D_l1_final")
+
+[node name="ReturnGate" type="StaticBody3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -64, 4.0336647, 68)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/ReturnGate"]
+shape = SubResource("BoxShape3D_l1_gate")
+
+[node name="GateMesh" type="MeshInstance3D" parent="Level 1/ReturnGate"]
+material_override = SubResource("StandardMaterial3D_7r4gi")
+mesh = SubResource("BoxMesh_l1_gate")
 
 [node name="Portal3D2" type="Node3D" parent="Level 1" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
 process_priority = 100
@@ -671,7 +806,7 @@ exit_portal = NodePath("../Portal3D")
 player_camera = NodePath("../../Player/Head/Camera3D")
 portal_frame_width = 0.0
 viewport_size_mode = 0
-view_direction = 2
+view_direction = 0
 portal_render_layer = 524288
 is_teleport = true
 teleport_direction = 1
@@ -768,6 +903,13 @@ mesh = SubResource("ArrayMesh_q5onr")
 
 [node name="Collider" type="CollisionShape3D" parent="Level 1/Portal3D6/TeleportArea"]
 shape = SubResource("BoxShape3D_jhx03")
+
+[node name="Level1CompleteTrigger" type="Area3D" parent="Level 1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -66.8, 4.0336647, 62.8)
+collision_mask = 32769
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level 1/Level1CompleteTrigger"]
+shape = SubResource("BoxShape3D_level1_complete")
 
 [node name="CSGStairMaker3D" parent="Level 1" instance=ExtResource("10_e3hyu")]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -74.6524, 4, 123.76382)
@@ -1069,6 +1211,10 @@ operation = 2
 use_collision = true
 size = Vector3(3, 2.5, 2.5)
 
+[node name="CSGBox3D2" type="CSGBox3D" parent="Level Cube"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30.349068, 0)
+size = Vector3(2.3, 2.3, 2.3)
+
 [node name="Portal3D" type="Node3D" parent="Level Cube" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
 process_priority = 100
 process_physics_priority = 100
@@ -1105,6 +1251,18 @@ mesh = SubResource("ArrayMesh_e3hyu")
 
 [node name="Collider" type="CollisionShape3D" parent="Level Cube/Portal3D/TeleportArea"]
 shape = SubResource("BoxShape3D_q5onr")
+
+[node name="LockBlocker" type="StaticBody3D" parent="Level Cube/Portal3D"]
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level Cube/Portal3D/LockBlocker"]
+shape = SubResource("BoxShape3D_lock_blocker")
+disabled = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Level Cube/Portal3D/LockBlocker"]
+material_override = SubResource("StandardMaterial3D_lock_blocker")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_lock_blocker")
 
 [node name="Portal3D3" type="Node3D" parent="Level Cube" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
 process_priority = 100
@@ -1143,6 +1301,18 @@ mesh = SubResource("ArrayMesh_e3hyu")
 [node name="Collider" type="CollisionShape3D" parent="Level Cube/Portal3D3/TeleportArea"]
 shape = SubResource("BoxShape3D_q5onr")
 
+[node name="LockBlocker" type="StaticBody3D" parent="Level Cube/Portal3D3"]
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level Cube/Portal3D3/LockBlocker"]
+shape = SubResource("BoxShape3D_lock_blocker")
+disabled = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Level Cube/Portal3D3/LockBlocker"]
+material_override = SubResource("StandardMaterial3D_lock_blocker")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_lock_blocker")
+
 [node name="Portal3D4" type="Node3D" parent="Level Cube" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
 process_priority = 100
 process_physics_priority = 100
@@ -1180,6 +1350,18 @@ mesh = SubResource("ArrayMesh_e3hyu")
 [node name="Collider" type="CollisionShape3D" parent="Level Cube/Portal3D4/TeleportArea"]
 shape = SubResource("BoxShape3D_q5onr")
 
+[node name="LockBlocker" type="StaticBody3D" parent="Level Cube/Portal3D4"]
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level Cube/Portal3D4/LockBlocker"]
+shape = SubResource("BoxShape3D_lock_blocker")
+disabled = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Level Cube/Portal3D4/LockBlocker"]
+material_override = SubResource("StandardMaterial3D_lock_blocker")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_lock_blocker")
+
 [node name="Portal3D5" type="Node3D" parent="Level Cube" node_paths=PackedStringArray("exit_portal", "player_camera") groups=["portals"]]
 process_priority = 100
 process_physics_priority = 100
@@ -1216,6 +1398,18 @@ mesh = SubResource("ArrayMesh_e3hyu")
 
 [node name="Collider" type="CollisionShape3D" parent="Level Cube/Portal3D5/TeleportArea"]
 shape = SubResource("BoxShape3D_q5onr")
+
+[node name="LockBlocker" type="StaticBody3D" parent="Level Cube/Portal3D5"]
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level Cube/Portal3D5/LockBlocker"]
+shape = SubResource("BoxShape3D_lock_blocker")
+disabled = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Level Cube/Portal3D5/LockBlocker"]
+material_override = SubResource("StandardMaterial3D_lock_blocker")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_lock_blocker")
 
 [node name="CompanionTV" parent="." instance=ExtResource("10_w7kh3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.474213, -2.4519253)

@@ -1,5 +1,8 @@
 extends Node3D
 
+signal tutorial_line_started(line_id: StringName, subtitle: String, duration: float)
+signal tutorial_line_finished(line_id: StringName)
+
 @export_group("Follow")
 @export_range(0.5, 10.0, 0.1) var follow_distance: float = 4.1
 @export_range(-4.0, 4.0, 0.1) var side_offset: float = 1.5
@@ -66,6 +69,7 @@ extends Node3D
 @onready var mouth: MeshInstance3D = %Mouth
 @onready var screen: MeshInstance3D = %Screen
 @onready var hit_area: Area3D = %HitArea
+@onready var voice_player: AudioStreamPlayer3D = %VoicePlayer
 
 const PLAYER_REFIND_INTERVAL: float = 0.4
 
@@ -109,6 +113,10 @@ var _physics_frame_counter: int = 0
 var _resolve_candidate_cursor: int = 0
 var _detour_candidate_cursor: int = 0
 var _last_click_reaction_frame: int = -1
+var _tutorial_queue: Array[Dictionary] = []
+var _tutorial_active_id: StringName = StringName()
+var _tutorial_fallback_timer: float = 0.0
+var _tutorial_using_audio: bool = false
 
 
 func _ready() -> void:
@@ -128,6 +136,8 @@ func _ready() -> void:
 	_blink_interval = randf_range(1.7, 3.5)
 	if hit_area != null:
 		hit_area.input_event.connect(_on_hit_area_input_event)
+	if voice_player != null and not voice_player.finished.is_connected(_on_voice_player_finished):
+		voice_player.finished.connect(_on_voice_player_finished)
 	if screen != null and screen.material_override is StandardMaterial3D:
 		var base_material := (screen.material_override as StandardMaterial3D).duplicate() as StandardMaterial3D
 		base_material.resource_local_to_scene = true
@@ -155,6 +165,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	_physics_frame_counter += 1
 	_time += delta
+	_update_tutorial_playback(delta)
 	if _player == null or not is_instance_valid(_player):
 		_player_refind_timer -= delta
 		if _player_refind_timer <= 0.0:
@@ -191,6 +202,87 @@ func _physics_process(delta: float) -> void:
 	_move_towards(resolved_target, delta)
 	_update_stuck_recovery(desired_target, resolved_target, delta)
 	_update_style(delta, resolved_target)
+
+
+func queue_tutorial_line(line_id: StringName, subtitle: String, audio_path: String, fallback_duration: float = 3.0) -> void:
+	if line_id == StringName():
+		return
+	if line_id == _tutorial_active_id:
+		return
+	for pending: Dictionary in _tutorial_queue:
+		var pending_id: StringName = pending.get("line_id", StringName())
+		if pending_id == line_id:
+			return
+
+	_tutorial_queue.append({
+		"line_id": line_id,
+		"subtitle": subtitle,
+		"audio_path": audio_path,
+		"fallback_duration": maxf(fallback_duration, 0.1),
+	})
+	_try_begin_next_tutorial_line()
+
+
+func _try_begin_next_tutorial_line() -> void:
+	if _tutorial_active_id != StringName():
+		return
+	if _tutorial_queue.is_empty():
+		return
+
+	var next_line: Dictionary = _tutorial_queue.pop_front()
+	var line_id: StringName = next_line.get("line_id", StringName())
+	var subtitle: String = str(next_line.get("subtitle", ""))
+	var audio_path: String = str(next_line.get("audio_path", ""))
+	var fallback_duration: float = float(next_line.get("fallback_duration", 3.0))
+	if line_id == StringName():
+		_try_begin_next_tutorial_line()
+		return
+
+	_tutorial_active_id = line_id
+	_tutorial_using_audio = false
+	_tutorial_fallback_timer = maxf(fallback_duration, 0.1)
+
+	if audio_path != "" and ResourceLoader.exists(audio_path):
+		var stream := load(audio_path) as AudioStream
+		if stream != null and voice_player != null:
+			voice_player.stream = stream
+			voice_player.play()
+			_tutorial_using_audio = true
+			_tutorial_fallback_timer = maxf(stream.get_length() + 0.25, fallback_duration + 0.25)
+
+	tutorial_line_started.emit(line_id, subtitle, maxf(_tutorial_fallback_timer, fallback_duration))
+
+
+func _update_tutorial_playback(delta: float) -> void:
+	if _tutorial_active_id == StringName():
+		_try_begin_next_tutorial_line()
+		return
+
+	if _tutorial_using_audio:
+		if voice_player == null or not voice_player.playing:
+			_finish_current_tutorial_line()
+		return
+
+	_tutorial_fallback_timer = maxf(_tutorial_fallback_timer - delta, 0.0)
+	if _tutorial_fallback_timer <= 0.0:
+		_finish_current_tutorial_line()
+
+
+func _on_voice_player_finished() -> void:
+	if _tutorial_active_id == StringName():
+		return
+	_finish_current_tutorial_line()
+
+
+func _finish_current_tutorial_line() -> void:
+	if _tutorial_active_id == StringName():
+		return
+	var finished_id: StringName = _tutorial_active_id
+	_tutorial_active_id = StringName()
+	_tutorial_using_audio = false
+	_tutorial_fallback_timer = 0.0
+	tutorial_line_finished.emit(finished_id)
+	_try_begin_next_tutorial_line()
 
 
 func _find_player() -> Node3D:
