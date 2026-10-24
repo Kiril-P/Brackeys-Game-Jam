@@ -20,3 +20,4 @@ Thumbs.db
 
 # Godot temp scenes
 *.tscn*.tmp
+*.TMP
